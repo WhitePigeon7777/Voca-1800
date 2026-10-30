@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>VOCA 1800 퀴즈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&display=swap">
+<style>
+  /* Layout: one narrow column, phone first. Setup -> flashcard preview -> mixed quiz -> graded result. */
+  :root {
+    --bg: #EEF1F7;
+    --surface: #FFFFFF;
+    --surface-2: #F4F6FB;
+    --ink: #111A33;
+    --muted: #59647F;
+    --line: #D6DCEA;
+    --accent: #2D4BD6;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #E2E8FC;
+    --good: #0E7C57;
+    --good-soft: #DAF1E7;
+    --bad: #C23A2E;
+    --bad-soft: #FADFDB;
+    --mark: #D23A2E;
+    --shadow: 0 1px 0 rgba(17,26,51,.04), 0 10px 26px -14px rgba(17,26,51,.28);
+    --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0D1222; --surface: #161D33; --surface-2: #1C2540; --ink: #E9EDF8; --muted: #9AA5C4;
+      --line: #2B3555; --accent: #8EA3FF; --accent-ink: #0D1222; --accent-soft: #232E5A;
+      --good: #52D3A2; --good-soft: #13392E; --bad: #FF8F84; --bad-soft: #44201D; --mark: #FF8F84;
+      --shadow: 0 10px 26px -14px rgba(0,0,0,.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0D1222; --surface: #161D33; --surface-2: #1C2540; --ink: #E9EDF8; --muted: #9AA5C4;
+    --line: #2B3555; --accent: #8EA3FF; --accent-ink: #0D1222; --accent-soft: #232E5A;
+    --good: #52D3A2; --good-soft: #13392E; --bad: #FF8F84; --bad-soft: #44201D; --mark: #FF8F84;
+    --shadow: 0 10px 26px -14px rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 400 15px/1.55 var(--font-body);
+    padding-block: 20px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  h1, h2, p, ul { margin: 0; padding: 0; }
+  ul { list-style: none; }
+  button { font-family: inherit; color: inherit; }
+  button:focus-visible, input:focus-visible, select:focus-visible, .fc:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .shell { max-width: 520px; margin: 0 auto; }
+  .view { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .mono { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  /* Setup */
+  .mast { display: flex; flex-direction: column; gap: 10px; padding: 8px 0 4px; }
+  .eyebrow { font: 500 11px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  h1 { font: 600 clamp(46px, 14vw, 62px)/.95 var(--font-display); letter-spacing: -.02em; }
+  h1 em { font-style: italic; font-weight: 500; color: var(--accent); }
+  .lede { color: var(--muted); max-width: 34em; text-wrap: balance; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .label { font: 600 12px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 8px 14px; min-height: 40px; font: 500 13px var(--font-mono); cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .range-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .range-row label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  select { min-height: 40px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 0 10px; font: 500 14px var(--font-mono); }
+  .meta { font: 500 12px var(--font-mono); color: var(--muted); letter-spacing: .04em; }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .seg button { min-height: 46px; border: 1px solid var(--line); background: var(--surface-2); border-radius: 12px; font: 500 15px var(--font-mono); cursor: pointer; }
+  .seg button[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .mixbar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; gap: 2px; }
+  .mixbar i { display: block; background: var(--accent); }
+  .mixbar i:nth-child(2) { opacity: .55; }
+  .mixbar i:nth-child(3) { opacity: .28; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
+  .legend b { font: 500 13px var(--font-mono); color: var(--ink); margin-left: 4px; }
+  .actions { display: flex; flex-direction: column; gap: 10px; }
+  .btn { min-height: 50px; width: 100%; border-radius: 12px; border: 1px solid transparent; padding: 0 18px; font: 600 15px var(--font-body); cursor: pointer; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn.secondary { background: var(--surface); border-color: var(--line); }
+  .btn.ghost { background: transparent; color: var(--muted); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.outline { background: var(--surface); border: 1.5px solid var(--accent); color: var(--accent); }
+  .btn.big { min-height: 68px; border-radius: 16px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; text-align: left; padding: 0 20px; box-shadow: var(--shadow); }
+  .btn.big span { font: 600 18px/1.2 var(--font-body); }
+  .btn.big small { font: 400 12.5px/1.3 var(--font-body); opacity: .8; }
+
+  /* Top bar, progress */
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .link { background: none; border: 0; color: var(--muted); font: 500 13px var(--font-body); padding: 8px 4px; min-height: 40px; cursor: pointer; }
+  .bar { height: 4px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
+  .tally { display: flex; align-items: center; gap: 6px; font: 500 13px var(--font-mono); font-variant-numeric: tabular-nums; }
+  .tally .o { color: var(--good); font-weight: 500; }
+  .tally .x { color: var(--bad); font-weight: 500; margin-left: 6px; }
+
+  /* Flashcard */
+  .fc-wrap { perspective: 1200px; }
+  .fc { position: relative; width: 100%; height: clamp(320px, 54vh, 400px); transform-style: preserve-3d; transition: transform .5s cubic-bezier(.2,.7,.2,1); cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: none; border-radius: 20px; }
+  .fc.noanim { transition: none; }
+  .fc.flipped { transform: rotateY(180deg); }
+  .fc-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+  .fc-back { transform: rotateY(180deg); overflow-y: auto; }
+  .fc-meta { display: flex; align-items: center; justify-content: space-between; min-height: 32px; }
+  .fc-front { align-items: stretch; }
+  .fc-word { margin: auto 0; text-align: center; font: 600 54px/1.05 var(--font-display); letter-spacing: -.01em; overflow-wrap: anywhere; }
+  .fc-hint { text-align: center; font-size: 12px; color: var(--muted); }
+  .fc-word-sm { font: 600 22px/1.2 var(--font-display); color: var(--accent); }
+  .fc-mean { font: 500 22px/1.45 var(--font-body); }
+  .fc-ex { font: italic 500 17px/1.5 var(--font-display); color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; margin-top: auto; }
+  .fc-ex mark { background: var(--accent-soft); color: var(--accent); font-style: normal; font-weight: 600; padding: 0 3px; border-radius: 4px; }
+  .mark-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .nav-row { display: flex; justify-content: space-between; }
+  .link:disabled { opacity: .35; cursor: default; }
+  .endcard { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .endcard h2 { font: 600 28px/1.15 var(--font-display); }
+  .stats { display: flex; gap: 20px; font: 500 14px var(--font-mono); color: var(--muted); }
+  .stats b { color: var(--ink); font-weight: 500; margin-left: 4px; }
+
+  /* Quiz */
+  .qcard { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); min-width: 0; }
+  .qmeta { display: flex; justify-content: space-between; align-items: center; }
+  .tag { font: 500 11px/1 var(--font-mono); letter-spacing: .08em; padding: 6px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+  .q-prompt { font-size: 13px; color: var(--muted); }
+  .q-word { font: 600 44px/1.08 var(--font-display); letter-spacing: -.01em; overflow-wrap: anywhere; }
+  .q-mean { font: 500 22px/1.45 var(--font-body); }
+  .q-sent { font: 500 21px/1.55 var(--font-display); }
+  .q-sent .blank { display: inline-block; min-width: 4.2em; border-bottom: 2px solid var(--ink); text-align: center; color: var(--accent); font-weight: 600; margin: 0 2px; }
+  .hint { font: 500 15px var(--font-mono); letter-spacing: .12em; color: var(--muted); overflow-wrap: anywhere; }
+  .opts { display: flex; flex-direction: column; gap: 8px; }
+  .opt { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 54px; text-align: left; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: 500 15px/1.4 var(--font-body); cursor: pointer; }
+  .opt:hover:not(:disabled) { border-color: var(--accent); }
+  .opt:disabled { color: var(--ink); cursor: default; }
+  .bub { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--muted); display: grid; place-items: center; font: 500 12px var(--font-mono); color: var(--muted); }
+  .opt.picked .bub { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .opt.is-correct { background: var(--good-soft); border-color: var(--good); }
+  .opt.is-correct .bub { background: var(--good); border-color: var(--good); color: var(--bg); }
+  .opt.is-wrong { background: var(--bad-soft); border-color: var(--bad); }
+  .opt.is-wrong .bub { background: var(--bad); border-color: var(--bad); color: var(--bg); }
+  .opt.dim { opacity: .62; }
+  .opt-r { display: flex; align-items: center; gap: 8px; max-width: 190px; }
+  .opt-w { font: 500 12px/1.3 var(--font-mono); color: var(--muted); text-align: right; overflow-wrap: anywhere; }
+  .mk { display: inline-grid; place-items: center; }
+  .mk svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+  .mk.good { color: var(--good); }
+  .mk.bad { color: var(--bad); }
+  .sp-form { display: flex; flex-direction: column; gap: 10px; }
+  .inp { width: 100%; min-height: 54px; font: 500 24px var(--font-display); letter-spacing: .02em; border: 1.5px solid var(--line); border-radius: 12px; padding: 8px 14px; background: var(--surface-2); color: var(--ink); }
+  .inp:disabled { color: var(--ink); opacity: 1; -webkit-text-fill-color: var(--ink); }
+  .sp-actions { display: grid; grid-template-columns: 1.3fr 1fr; gap: 10px; }
+  .fb { display: flex; gap: 12px; align-items: flex-start; border-radius: 12px; padding: 12px 14px; }
+  .fb.good { background: var(--good-soft); }
+  .fb.bad { background: var(--bad-soft); }
+  .fb .mk svg { width: 30px; height: 30px; }
+  .fb-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .fb-t { font-weight: 600; }
+  .fb-w { font: 600 22px/1.2 var(--font-display); overflow-wrap: anywhere; }
+  .fb-m { font-size: 14px; color: var(--ink); }
+  .fb-s { font: italic 500 16px/1.5 var(--font-display); }
+  .fb-s b { font-style: normal; font-weight: 600; }
+  .fb-given { font-size: 13px; color: var(--muted); }
+
+  /* Result */
+  .score-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 0 4px; }
+  .score { position: relative; display: inline-flex; align-items: baseline; gap: 8px; padding: 20px 38px; }
+  .score svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .score svg ellipse { fill: none; stroke: var(--mark); stroke-width: 3.5; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+  .sc-n { font: 600 72px/1 var(--font-display); letter-spacing: -.02em; position: relative; }
+  .sc-d { font: 500 24px var(--font-display); color: var(--muted); position: relative; }
+  .pct { font: 500 13px var(--font-mono); color: var(--muted); letter-spacing: .08em; }
+  .msg { text-align: center; color: var(--muted); text-wrap: balance; }
+  .brk { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; align-items: center; font-size: 14px; }
+  .brk .track { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .brk .track i { display: block; height: 100%; background: var(--accent); }
+  .brk .n { font: 500 13px var(--font-mono); font-variant-numeric: tabular-nums; }
+  .wl li { display: grid; gap: 2px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .wl li:first-child { border-top: 0; padding-top: 0; }
+  .wl .w { font: 600 22px/1.2 var(--font-display); display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .wl .w .mono { font-size: 11px; }
+  .wl .m { font-size: 14px; }
+  .wl .g { font-size: 13px; color: var(--muted); }
+
+  .badge { font: 500 11px/1 var(--font-mono); padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); letter-spacing: .04em; }
+  .badge.cnt { color: var(--bad); border-color: var(--bad); }
+  .badge.ok { color: var(--good); border-color: var(--good); }
+  .empty { color: var(--muted); font-size: 14px; }
+  @media (prefers-reduced-motion: reduce) {
+    .fc, .bar i { transition: none; }
+  }
+</style>
+
+</head>
+<body>
+<main class="shell">
+
+  <!-- 1. Setup -->
+  <section id="v-setup" class="view">
+    <header class="mast">
+      <p class="eyebrow">영어 못하는 사람 다 들어와 · 입시 단어</p>
+      <h1>VOCA <em>1800</em></h1>
+      <p class="lede">범위를 고르면 단어를 뽑아 플래시카드로 먼저 훑고, 혼합형 퀴즈로 확인해요.</p>
+    </header>
+    <div class="panel">
+      <h2 class="label">범위</h2>
+      <div class="chips" id="chips"></div>
+      <div class="range-row">
+        <label for="d-from">시작 <select id="d-from"></select></label>
+        <span class="mono">~</span>
+        <label for="d-to">끝 <select id="d-to"></select></label>
+      </div>
+      <p class="meta" id="range-meta"></p>
+    </div>
+    <div class="panel">
+      <h2 class="label">문항 수</h2>
+      <div class="seg" id="seg-n" role="radiogroup" aria-label="문항 수"></div>
+      <div class="mixbar" id="mixbar"></div>
+      <div class="legend" id="legend"></div>
+      <p class="meta" id="mix-note"></p>
+    </div>
+    <div class="actions">
+      <button class="btn primary big" id="go-cards" type="button"><span>플래시카드</span></button>
+      <button class="btn outline big" id="go-quiz" type="button"><span>퀴즈 풀기</span></button>
+      <button class="btn secondary" id="go-wrong" type="button">최근 오답 보기</button>
+    </div>
+  </section>
+
+  <!-- 2. Flashcards -->
+  <section id="v-cards" class="view" hidden>
+    <div class="topbar">
+      <button class="link" id="c-back" type="button">← 설정</button>
+      <span class="mono" id="c-count"></span>
+      <button class="link" id="c-skip" type="button">퀴즈로 →</button>
+    </div>
+    <div class="bar"><i id="c-bar"></i></div>
+    <div id="c-deck" class="view">
+      <div class="fc-wrap">
+        <div class="fc" id="fc" role="button" tabindex="0" aria-label="카드 뒤집기">
+          <div class="fc-face fc-front">
+            <div class="fc-meta">
+              <span class="mono" id="fc-day"></span>
+            </div>
+            <div class="fc-word" id="fc-word"></div>
+            <p class="fc-hint">탭하거나 휙 넘기면 뒤집혀요</p>
+          </div>
+          <div class="fc-face fc-back">
+            <div class="fc-meta"><span class="mono" id="fc-day2"></span></div>
+            <p class="fc-word-sm" id="fc-word2"></p>
+            <p class="fc-mean" id="fc-mean"></p>
+            <p class="fc-ex" id="fc-ex"></p>
+          </div>
+        </div>
+      </div>
+      <div class="mark-row">
+        <button class="btn secondary" id="c-unsure" type="button">헷갈려요</button>
+        <button class="btn primary" id="c-know" type="button">알아요</button>
+      </div>
+      <div class="nav-row">
+        <button class="link" id="c-prev" type="button">← 이전</button>
+        <button class="link" id="c-flip" type="button">뒤집기</button>
+        <button class="link" id="c-next" type="button">다음 →</button>
+      </div>
+    </div>
+    <div id="c-end" class="endcard" hidden></div>
+  </section>
+
+  <!-- 3. Quiz -->
+  <section id="v-quiz" class="view" hidden>
+    <div class="topbar">
+      <button class="link" id="q-quit" type="button">← 그만하기</button>
+      <span class="mono" id="q-count"></span>
+      <span class="tally" aria-label="채점 현황"><span class="o">○</span><span id="q-ok">0</span><span class="x">／</span><span id="q-ng">0</span></span>
+    </div>
+    <div class="bar"><i id="q-bar"></i></div>
+    <article class="qcard">
+      <div class="qmeta"><span class="tag" id="q-type"></span><span class="mono" id="q-no"></span></div>
+      <div id="q-body" class="view"></div>
+      <div id="q-fb" class="fb" role="status" hidden></div>
+      <button class="btn primary" id="q-next" type="button" hidden>다음 문제</button>
+    </article>
+  </section>
+
+  <!-- 5. Recent wrong answers -->
+  <section id="v-wrong" class="view" hidden></section>
+
+  <!-- 4. Result -->
+  <section id="v-result" class="view" hidden></section>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var RAW = [[1,[["enrich","풍요롭게 하다, 풍부하게 하다","Reading widely can ___ your vocabulary and your imagination."],["cuisine","요리, 요리법","Korean ___ is famous for its fermented side dishes like kimchi."],["diversity","다양성"],["manuscript","원고"],["cooperation","협조, 협력, 합동"],["insightful","통찰력 있는"],["submit","제출하다, 항복하다","You must ___ your essay to the teacher by Friday."],["incorporate","포함하다, 통합하다"],["order","주문하다, 순서를 정하다, 정돈[정리]하다, 명령하다, 주문, 순서, 정돈, 정리, 명령"],["complaint","불만, 불평, 항의","She made a formal ___ about the noisy construction next door."],["resolve","해결하다, 다짐하다, 결의하다"],["compensation","보상"],["enthusiastic","열정적인"],["tiresome","지루한"],["loan","대출금, 대출","He took out a bank ___ to pay for his college tuition."],["repay","상환하다, 갚다, 보답하다","I promise to ___ the money I borrowed next month."],["satisfied","만족한"],["translate","통역하다, 번역하다","Could you ___ this Korean sentence into English for me?"],["property","재산, 소유물, 속성"],["chance","기회, 우연, 가능성"],["rejection","거절"],["dizzy","어지러운","After spinning around ten times, I felt so ___ that I had to sit down."],["ridiculous","말도 안 되는, 터무니없는"],["superior","우월한, 더 나은, 우세한"],["burden","짐, 부담"],["precious","소중한, 귀중한"],["interrupt","중단하다, 방해하다","It is rude to ___ someone while they are speaking."],["shield","보호하다, 가리다, 방패"],["prayer","기도"],["fix","수리하다, 고치다, 정하다, 고정시키다"]]],[2,[["commute","통근, 출퇴근, 통근하다, 출퇴근하다","It takes me an hour to ___ to school every day."],["irony","얄궂음, 아이러니, 반어법"],["soaked","흠뻑 젖은"],["scent","향기, 냄새","The ___ of fresh bread filled the whole kitchen."],["unassuming","겸손한"],["polite","정중한, 예의 바른"],["ease","덜어 주다, 쉬움, 편안함"],["microclimate","미기후"],["maximize","최대화하다, 극대화하다","The company wants to ___ its profits this year."],["inject","주입하다, 더하다, 주사하다"],["tactic","책략, 전략, 전술"],["loyalty","충성심, 충성도"],["inspire","영감을 주다","Her speech was meant to ___ young people to follow their dreams."],["cathedral","대성당"],["trap","가두다, 덫, 함정, 올가미"],["pen","쓰다, 펜"],["ancient","아주 오래된, 고대의","The museum has a collection of ___ Egyptian pottery."],["blueprint","설계도, 청사진"],["dictator","절대 권력자, 독재자","The ___ ruled the country for thirty years without a single election."],["controversial","논쟁의 여지가 있는, 논쟁의 대상인, 논란이 많은"],["probe","(면밀히) 조사하다, 살피다, (면밀한) 조사, 탐침"],["assumption","(근거 없는) 가정[추정], 전제","It is a false ___ that all teenagers dislike studying."],["abstract","추상적인"],["concentrate","농축시키다, 집중하다"],["civilization","문명","The Indus Valley was one of the earliest centers of human ___."],["flourish","번영[번성]하다, 무성하다, 우거지다","Plants will ___ if they receive enough sunlight and water."],["sophisticated","정교한"],["fraction","(아주 작은) 일부, 부분"],["engagement","관여, 참여"],["abandon","버리다, 유기하다, 포기하다"]]],[3,[["accountable","책임 있는","Leaders must be ___ for the decisions they make."],["disruption","격변, 혼란, 붕괴","The heavy snow caused a major ___ to train services."],["retake","되찾다"],["corporate","기업의, 회사의"],["gatekeeper","문지기, 수문장"],["myth","근거 없는 믿음, 신화"],["comet","혜성"],["antibiotic","항생제, 항생의, 항생 물질의","The doctor prescribed an ___ to treat the infection."],["immunization","예방 접종"],["objective","객관적인, 목표, 목적","A good judge must remain ___ and never take sides."],["plausible","그럴듯한"],["intuition","직관(력), 직감"],["respect","존중하다, 존경하다, 존중, 존경, (측)면, 점"],["ultimate","최종적인, 궁극적인"],["normal","정상적인, 당연한"],["internal","내면의, 내적인, 내부의"],["anxiety","불안, 걱정","She felt great ___ before the final exam."],["compassion","연민","The nurse showed great ___ toward the sick children."],["comprehend","이해하다","It is hard to ___ such a complicated theory in one reading."],["destructive","파괴적인"],["crisis","위기"],["policy","정책","The school has a strict ___ against cheating."],["revisit","재검토하다, 다시방문하다"],["nutrition","영양"],["expert","전문가"],["contain","담고 있다, 포함하다, 함유하다, 억누르다"],["reputable","평판이 좋은"],["misleading","오해의 소지가 있는, 오도하는","The advertisement was ___ because it hid the real price."],["polish","닦다, 다듬다"],["sweep","쓸다, 휙 젖히다"]]],[4,[["arouse","고조시키다, 자극하다","The strange noise from the attic began to ___ our curiosity."],["region","부위, 부분, 지역, 지방"],["introduction","유입, 소개"],["alien","외국인, 이방인, 외계의, 외국의, 이질적인"],["compatible","양립될 수 있는, 호환 가능한"],["restrict","제한하다, 국한하다","The new law will ___ the use of plastic bags."],["concerning","~에 관한"],["convincing","설득력 있는","The lawyer gave a ___ argument, and the jury agreed with her."],["rubbish","폐품, 쓰레기"],["materialistic","물질주의적인"],["operation","작용, 운영, 경영, 작업, 수술"],["fascination","매료됨, 매력 있는 것","The boy's ___ with space led him to become an astronomer."],["factor","요인, 요소"],["cognitive","인지의, 인식의","Solving puzzles can improve a child's ___ development."],["reflection","성찰, 반사, 반영","I saw my ___ in the calm surface of the lake."],["reveal","드러내다, 밝히다, 폭로하다","The test results will ___ whether the medicine works."],["reverse","역전시키다, 뒤집다, 거꾸로 하다, 반대의, 거꾸로의"],["signify","의미하다, 나타내다"],["populate","살다, 거주하다, (~ 속의 자리를) 차지하다"],["representation","표상, 대표(성), 표현"],["interweave","얽다, 엮다, 섞어 짜다"],["literature","문학, (연구) 문헌"],["occupation","(특히 즐거움을 위해 시간을 보내는 특정한) 활동, 직업, 점령"],["gratify","만족시키다"],["utter","완전한, 말을 하다, 발화하다"],["innate","타고난, 선천적인, 내재적인"],["optimal","최적의","Eight hours of sleep is ___ for teenagers' health."],["prevailing","지배적인, 우세한"],["industrial","산업의, 공업의"],["dismiss","일축[묵살]하다, 해고하다, 기각하다","The manager decided to ___ the idea without listening to it."]]],[5,[["thirst","갈증, 목마름, 갈망하다","After running in the sun, I drank water to quench my ___."],["negotiator","협상가"],["investment","투자, (시간·노력·열의 등의) 투입"],["symposium","학술 토론회, 심포지엄"],["displace","대체[대신]하다, (살던 곳에서) 쫓아내다, (평소의 위치에서) 옮겨 놓다"],["entail","수반하다"],["precision","정밀성, 정밀도","Surgeons need great ___ when they operate."],["ambiguity","모호함, 모호성"],["phenomenon","현상"],["emphasize","강조하다","Teachers often ___ the importance of reviewing after class."],["renowned","유명한, 저명한","Marie Curie was a ___ scientist who won two Nobel Prizes."],["expensive","비용이 많이 드는, 비싼"],["suspension","유예, 보류, 정지, 정학"],["bound","얽매인, 반드시 ~할 수밖에 없는"],["destination","목적지, 관광지","Jeju Island is a popular tourist ___ in Korea."],["common","흔한, 일반적인, 공통의"],["adoption","채택, 입양"],["outnumber","(~보다) 수가 더 많다"],["figure","수치, 숫자, 인물, 형상, 생각하다, 계산하다"],["appliance","기기, 가전제품","A washing machine is a useful household ___."],["generate","발생시키다, 만들어 내다, 일으키다","Solar panels ___ electricity from sunlight."],["chemistry","화학, 화학적 상태, 화학적 성질"],["distinguished","저명한, 매우 성공한"],["curiosity","호기심"],["ugly","흉한, 추한"],["synthetic","합성의, 인위적인","Nylon is a ___ fiber made in factories."],["vibrant","생생한, 활기찬, 선명한"],["construct","건설[건축]하다, 구성하다, 개념, 생각, 구성체"],["costume","의상, 복장","She wore a witch ___ to the Halloween party."],["portrait","초상화"]]],[6,[["aid","돕다, 도움, 원조","The Red Cross sent food and medical ___ to the flood victims."],["assistance","도움, 보조, 지원"],["shelter","보호하다, 보호소, 주거지, 쉼터","The hikers found ___ from the storm in a small cave."],["dedicate","헌신하다, 바치다, 전념하다","She chose to ___ her life to helping stray animals."],["rural","시골의, 농촌의, 지방의","Life in a ___ village is quieter than life in the city."],["legacy","유산","The king left a lasting ___ of peace and prosperity."],["inner","내면의, 내부의"],["seasonal","계절에 맞는, 계절의"],["session","수업, (특정한 활동을 위한) 시간[기간], 회기"],["affordable","(가격이) 알맞은, 적당한, 합리적인","The restaurant offers delicious meals at ___ prices."],["official","공식적인, 공적인"],["application","적용, 응용, 지원, 응용 프로그램"],["determine","결정하다, 결심하다, 알아내다"],["endeavor","노력"],["monetary","금전적인, 통화의"],["conventional","전통적인, 기존의, 관습적인, 재래식의"],["produce","농산물, 만들어 내다, 생산하다"],["escape","벗어나다, 탈출하다, 탈출","The prisoner tried to ___ through a hole in the wall."],["similar","유사한, 비슷한"],["boundary","경계(선)","A river forms the ___ between the two countries."],["distinct","뚜렷한, 명백한, 뚜렷이구별되는, 고유한"],["observation","의견, 논평, 관찰, 관측"],["incidence","발생[발병]률, 빈도, 발생 정도"],["coincidence","우연, 우연의 일치"],["confront","마주하다, 직면하다"],["appropriate","적절한, 적합한, 적당한, 도용하다"],["obesity","비만","Eating too much junk food can lead to ___."],["wrongdoer","악행을 저지르는 사람, 범법자"],["obvious","명백한, 분명한, 당연한"],["embody","구현하다, 체화하다, 나타내다"]]],[7,[["revenge","복수, 보복","He swore to take ___ on those who had betrayed him."],["cooperative","협력적인, 협동적인, 협조적인"],["beneficial","유익한, 이로운","Regular exercise is ___ to both body and mind."],["caution","조심, 신중, 경고하다","Drivers should use ___ on icy roads."],["remind","상기시키다"],["remedy","치료(약), 해결책","Honey and warm water is a traditional ___ for a sore throat."],["diagnose","진단하다","It is hard to ___ the disease without a blood test."],["undergo","거치다, 겪다","He had to ___ surgery on his knee."],["approval","승인, 인정","You need your parents' ___ to join the school trip."],["supplement","보충(제), 보충하다","Many people take a vitamin ___ every morning."],["current","현행의, 현재의, 흐름, 해류"],["evaluate","평가하다"],["legislator","(의회) 의원, 입법자"],["significance","의의, 의미, 중요성"],["participation","참여"],["analysis","분석"],["condense","응축하다, 압축하다, 요약하다"],["regularity","규칙성"],["quantity","양"],["confirm","확인하다"],["distinguish","가르다, 구별하다, 구분하다"],["faculty","기능, 능력, 교직원, 학부"],["automatic","자동적인, 무의식적인"],["disposition","성질, 성향, 기질"],["secrete","분비하다","The stomach glands ___ acid to help digest food."],["coherent","일관된, 조리 있는"],["array","배열, 집합체"],["direction","지휘, 감독, 방향"],["rarely","거의 ~하지 않는, 좀처럼 ~하지 않는"],["aesthetic","미학적인, 미적인, 미관"]]],[8,[["fulfill","충족시키다, 달성하다","She worked hard to ___ her dream of becoming a doctor."],["conspicuous","눈에 (잘) 띄는","The red car was ___ among all the gray ones."],["passage","글, 구절, 이동, 통로"],["knowledgeable","잘 아는, 해박한"],["deficit","부족, 결손","The country has a trade ___ because it imports more than it exports."],["outscore","(~보다) 더 높은 점수를 받다"],["prior","사전의, 이전의"],["adherence","지속성, 집착, 고수"],["elicit","이끌어 내다","The teacher asked questions to ___ answers from the students."],["cue","유도하다, 신호하다, 단서, 실마리"],["proper","적합한, 적절한"],["optimum","최고의, 최적의"],["digit","자릿수, 숫자"],["stress","강조하다, 스트레스"],["specific","특정한"],["cluster","모으다, 무리를 이루다, 무리, 집합"],["prove","증명하다"],["reason","추론하다, 판단하다, 이유, 이성, 근거"],["seed","씨앗, 씨를 뿌리다"],["trigger","유발하다, 촉발하다, 일으키다"],["deception","속임수, 기만","The magician's ___ fooled the entire audience."],["inform","알리다, 알려 주다"],["modest","대단하지 않은, 겸손한"],["groundbreaking","혁신적인, 획기적인","The scientist made a ___ discovery that changed medicine."],["perceptual","지각의, 인식의"],["multiple","여러, 다수의, 다양한"],["navigate","길을 찾다, (길을) 안내하다, 항해하다","Sailors use the stars to ___ across the ocean."],["sufficient","충분한","We have ___ food to last the whole winter."],["immense","엄청난, 거대한","The Amazon rainforest is an ___ area full of wildlife."],["border","국경(선), 경계"]]],[9,[["conflict","갈등, 분쟁, 상충하다","The two countries tried to resolve their ___ peacefully."],["reference","준거, 기준, 참고, 참조, 언급"],["imitate","모방하다, 흉내 내다","Parrots can ___ human voices."],["proximity","근접(성), 가까움"],["undervalue","저평가하다, 과소평가하다"],["refuge","피난처, 보호 시설, 쉼터","The villagers took ___ in the church during the war."],["purification","정화"],["apparent","눈에 보이는, 겉으로 보이는, 명백한"],["shallow","피상적인, 얕은","Small children can safely play in the ___ end of the pool."],["capability","역량, 능력"],["execution","수행, 실행"],["distract","(주의를) 산만하게 하다","Loud music can ___ you while you study."],["output","결과물, 출력, 생산량"],["acquire","획득하다, 얻다, 습득하다","She worked abroad to ___ new skills."],["condition","질환, 조건, 상태"],["depression","우울(증)"],["tragedy","비극"],["grasp","이해하다, 파악하다, 꽉 잡다"],["symptom","증상","A cough is a common ___ of the flu."],["presentation","표출, 표현, 발표, 제출"],["criterion","기준"],["analogy","유추, 비유, 유사점"],["divine","신성한, 신의"],["outcome","결과"],["restore","회복하다, 복원하다, 복구하다","Workers tried to ___ the old painting to its original beauty."],["overall","전반적인, 전체적인"],["endure","견디다, 인내하다","Soldiers had to ___ extreme cold during the winter."],["despair","절망"],["overlap","겹치다"],["barn","헛간"]]],[10,[["opinion","의견"],["necessitate","필요로 하다"],["regarding","~과 관련하여","I have a question ___ the homework."],["preference","선호, 선호하는 것","Do you have a ___ for tea or coffee?"],["prominent","중요한, 두드러진","She is a ___ lawyer known across the country."],["coordinate","조정하다, 조율하다"],["rational","합리적인, 이성적인"],["unthought","무의식적인, 예기치 않은"],["bygone","지나간, 과거의"],["attitude","태도"],["contemporary","현시대의, 동시대적인, 동시대의 사람"],["repurpose","재활용하다, 다른 용도로 사용하다"],["fashion","만들다, 유행, 방식"],["alter","개조하다, 변경하다, 바꾸다","We had to ___ our travel plans because of the storm."],["secondhand","중고의, 간접적인"],["sustainability","지속 가능성"],["inherent","본질적인, 본래의, 내재된, 선천적인"],["widespread","널리 퍼진"],["rare","드문, 희귀한","Snow is ___ in tropical countries."],["row","줄, 열"],["crude","조잡한, 대충의, 미가공의"],["distribute","배포하다, 분포시키다, 분배하다, 유통시키다","Volunteers will ___ food to families in need."],["questionable","의심스러운"],["access","접근하다, 이용하다, 접근(성)"],["portable","휴대용의","A ___ charger is useful when you travel."],["democratic","민주적인, 민주주의의","Citizens vote for their leaders in a ___ country."],["discern","분별하다, 구분하다, 식별하다, 파악하다","It was too dark to ___ the faces of the people."],["combination","결합, 조합"],["shrinking","축소, 감소"],["contest","경쟁, 대회, 경쟁하다, 다투다"]]],[11,[["chronic","만성적인","He suffers from ___ back pain caused by years of poor posture."],["simplify","단순화하다","Please ___ the instructions so everyone can understand them."],["willingness","기꺼이 하려는 의지"],["disarmament","군축, 무장 해제"],["escalation","고조, 상승, 격화","Leaders feared an ___ of the conflict into a full-scale war."],["demonstrate","보여 주다, 입증하다, 시연하다","The chemist will ___ how the experiment works."],["circumstance","상황, 환경, 사정"],["conciliation","우호 상태, 화해"],["centerpiece","핵심, 중심 요소"],["demanding","힘든, 부담이 큰"],["isolation","격리, 고립","Long ___ at sea made the sailors lonely."],["obligate","의무를 지우다, 강요하다"],["refuse","거절하다, 거부하다"],["aroma","냄새, 향기","The ___ of fresh coffee woke me up."],["ascend","올라가다, 오르다"],["patience","인내(심)","Teaching small children requires a lot of ___."],["paragraph","단락"],["improve","향상되다, 향상하다, 개선하다"],["disruptive","방해가 되는, 파괴적인"],["impression","느낌, 인상"],["nonprofit","비영리적인, 비영리 단체"],["startle","깜짝 놀라게 하다"],["hesitate","망설이다, 주저하다","Don't ___ to ask questions if you don't understand."],["revolutionize","혁신을 가져오다, 획기적으로 바꾸다","The internet continues to ___ the way we communicate."],["custom","관행, 관습"],["deceive","속이다"],["mischievous","장난기 많은"],["exist","존재하다"],["reasoning","추론, 추리, 추리의, 이성이 있는"],["individualism","개인주의"]]],[12,[["share","나누다, 공유하다, 비율, 몫"],["perspective","관점, 원근(법)"],["wander","돌아다니다, 거닐다, 돌아다니기, 거닐기","We like to ___ through old streets without a map."],["corridor","회랑 지대, 복도"],["halt","중단하다, 멈춰 서다, 중단, 멈춤"],["liquid","액체의, 액체 형태의, 액체"],["emission","배출(물)","Cars are the main source of carbon ___ in big cities."],["landfill","쓰레기 매립지, 쓰레기 매립","Most of our trash ends up in a ___."],["dependence","의존(도)"],["interference","간섭, 방해"],["mammal","포유류, 포유동물","A whale is a ___, not a fish."],["keystone","핵심, 쐐기돌"],["stretch","뻗다, 퍼지다"],["universe","우주","Scientists believe the ___ began with the Big Bang."],["gauge","측정하다, 판단하다, 범위, 치수"],["accurate","정확한"],["orbit","궤도","The Moon takes about 27 days to ___ the Earth."],["temperate","온대의, 온화한, 절제하는","Korea has a ___ climate with four distinct seasons."],["frozen","얼어붙은, 냉동된"],["microorganism","미생물","Yeast is a ___ used to make bread rise."],["molecular","분자의, 분자에 의한"],["definition","정의, 선명도"],["tedious","따분한, 지루한","Copying hundreds of numbers by hand is a ___ task."],["virtual","가상의, 실질적인"],["journey","여행, 여정"],["comfort","편안함, 안락"],["imposition","부과, 부담"],["pursue","추구하다, 추적하다"],["scold","꾸짖다"],["sarcastic","비꼬는, 냉소적인"]]],[13,[["guilty","죄책감을 느끼게 하는, 죄책감이 드는, 유죄의"],["rigid","경직된, 엄격한","The rules were so ___ that no one could ask for exceptions."],["activate","활성화하다, 작동시키다","Press this button to ___ the alarm."],["negative","부정적인, 비관적인, 소극적인, 마이너스의"],["explicit","명시적인, 뚜렷한","The teacher gave ___ instructions, so no one was confused."],["identification","식별, 신원 확인"],["furnishing","가구 (비치), 비품"],["stack","쌓다, (쌓아 올린) 더미"],["exhibition","전시(회)","The art museum is holding an ___ of modern paintings."],["insult","모욕(감), 모욕하다, 무례한 짓을 하다","It is rude to ___ people because of their appearance."],["explore","탐구하다, 탐색하다, 탐험하다"],["affirm","확인하다, 단언하다"],["universal","보편적인, 우주의"],["religion","종교"],["character","등장인물, 성격"],["arrival","도래, 도착, 등장"],["protest","항의, 이의 제기, 항의하다, 이의를 제기하다"],["rebellion","반란, 반대, 저항","The soldiers started a ___ against the unfair government."],["fluid","유동적인, 유체, 액체"],["challenge","도전하다, 이의를 제기하다, 어려움, 도전, 이의 제기"],["advent","출현, 도래"],["suburb","교외 (지역), 근교","They moved to a quiet ___ outside the city."],["spacious","넓은, 널찍한","The apartment is ___ enough for a family of five."],["detach","분리하다, 떼어 내다"],["executive","(기업의) 임원, 이사, 경영진, 경영의, 집행의"],["domain","분야, 영역, 도메인"],["modify","수정하다, 조정하다"],["tropical","열대의, 열대 지방의"],["evolutionary","진화의, 진화적인, 점진적인"],["deficient","부족한, 결핍된","A diet ___ in iron may cause tiredness."]]],[14,[["vivid","생생한, 생기에 찬","She has a ___ memory of her first day at school."],["transparent","투명한, 명료한","Glass is ___, so light passes through it."],["strategy","전략","The coach explained the team's ___ for the final match."],["notion","생각, 개념"],["advanced","고도의, 고등의, 진보한"],["substance","본질, 물질, 실체"],["principle","원칙, 원리","Honesty is the basic ___ of our school."],["commercial","상업적인, 상업의"],["browse","검색하다, 훑어보다, 뜯어 먹다","I like to ___ the shelves at the bookstore on weekends."],["comparative","비교의, 상대적인"],["transfer","옮기다, 전환하다, 환승하다, 전환, 이동, 환승"],["celebrity","유명인"],["personality","개성, 성격"],["differentiate","차별화하다, 구분하다"],["oppressive","억압적인"],["infrastructure","(사회) 기반 시설"],["hazardous","위험한, 해로운","Chemical waste is ___ to human health."],["exposure","노출, 접하게 함"],["eliminate","배제하다, 제거하다, 없애다","The new filter can ___ almost all the bacteria."],["extreme","극단, 극단적인, 극도의"],["dose","복용량, 양"],["prompt","자극하다, 촉발하다, 신속한, 즉각적인"],["impulse","충동"],["sensory","감각의"],["transportation","배송, 운송, 교통수단"],["request","요청하다, 요청"],["finalize","확정하다, 결말을 짓다"],["telescope","망원경","Galileo used a ___ to observe the moons of Jupiter."],["tiny","매우 작은"],["stare","응시하다, 빤히 쳐다보다, 응시, 빤히 쳐다보기","It is impolite to ___ at strangers."]]],[15,[["meteor","유성, 별똥별"],["scan","살피다, 스캔하다"],["vulnerability","취약성","Hackers look for ___ in computer systems."],["firewall","방화벽","A ___ protects your computer from unauthorized access."],["confidential","비밀의, 기밀의, 은밀한","Doctors must keep patients' records ___."],["odd","이상한, 홀수의"],["gradual","점진적인, 단계적인, 서서히 하는","There has been a ___ increase in temperature over the decades."],["downright","매우, 완전히, 완전한, 노골적인"],["dairy","유제품, 낙농(업), 유제품의, 낙농(업)의","Milk, cheese, and yogurt are ___ products."],["confusion","혼란, 혼동"],["sort","분류하다, 종류"],["suspicion","의심, 의혹, 혐의"],["hinder","방해하다, 못 하게 하다","Heavy rain may ___ the rescue operation."],["experiment","실험, 실험하다"],["reliable","확실한, 신뢰할 수 있는"],["structure","구조, 구조물, 짜임새, 조직하다, 구조화하다"],["evoke","불러일으키다, 유발하다","The old song can ___ memories of my childhood."],["reservation","예약, 보류, (미국에서)인디언 보호 구역"],["qualify","자격을 얻다, 자격을 주다, 수식하다, 단서를 달다","You must pass the test to ___ for the finals."],["medication","약(물), 약물 치료"],["renewal","갱신, 재개, 부활"],["prevention","예방, 방지"],["registration","등록, 기입"],["recommend","권장하다, 권하다, 추천하다"],["spectacle","구경거리, 광경","The fireworks were a magnificent ___."],["instruction","수업, 교육, 지시, 사용법"],["situation","상황, 환경"],["ignore","무시하다, 모르는 체하다"],["correct","바로잡다, 수정하다, 올바른, 정확한"],["childhood","어린 시절, 유년기"]]],[16,[["recognize","인식하다, 인지하다","I didn't ___ her with her new haircut."],["influential","영향력이 있는, 영향을 미치는","Einstein was one of the most ___ scientists in history."],["express","표현하다"],["tribe","부족, 종족","The ___ lived in the forest for hundreds of years."],["gravity","중력, 진지함","The force of ___ keeps us on the ground."],["inclined","경사진, ~하고 싶은, ~의 경향이 있는"],["constant","일정한, 지속적인, 불변의 것, 상수"],["blend","결합하다, 섞다"],["actual","실제의, 현실의"],["incentive","인센티브, 유인, 자극, 자극적인, 장려하는","A bonus is a strong ___ to work harder."],["purchase","구매, 구매하다, 사다"],["emotional","정서적인, 감정의, 감정적인"],["donate","기부하다, 기증하다"],["authority","권위, 권위자, (주로 복수로) 당국"],["circulate","유포되다, 유포하다, 돌다, 순환하다","Blood must ___ throughout the body."],["military","군사의, 무력의, 군인들, 군대"],["exemplary","모범적인, 전형적인, 좋은 예가 되는","Her ___ behavior earned her an award."],["grief","슬픔"],["straightforward","있는 그대로의, 솔직한, 명확한"],["arrange","배열하다, 준비하다, 정돈하다, 정리하다"],["empathize","공감하다, 감정 이입을 하다","Good listeners try to ___ with other people's feelings."],["strengthen","강화하다, 튼튼하게 하다"],["permanent","영구적인, 불변의, 상설의","A tattoo is ___, but a sticker is not."],["discrete","명확하게 구분되는, 개별의"],["present","제시하다, 주다, 현재, 선물, 존재하는, 참석한, 현재의"],["tailored","맞춤의"],["norm","규범, 표준"],["conservative","보수적인, 보수주의의"],["function","기능하다, 기능"],["compete","경쟁하다, 겨루다, 서로 맞서다"]]],[17,[["costly","소모가 많은, 비용이 많이 드는, 희생이 큰","Repairing the old bridge would be ___ for the city."],["duration","(지속) 시간, 기간","The ___ of the movie is two hours."],["fake","조작하다, 위조하다, 가짜의, 위조의, 위조품","The police found a ___ passport in his bag."],["detail","세부 사항, 상세"],["haste","서두름, 급함","In his ___ to leave, he forgot his wallet."],["stimulation","자극, 격려, 고무"],["fetch","가지고 오다","Please ___ me a glass of water."],["concern","걱정, 우려, 관심"],["potter","도공, 도예가"],["arise","발생하다, 일어나다"],["countless","셀 수 없이 많은, 무수한"],["lower","내리다, 낮추다"],["regret","후회하다, 유감스럽게생각하다, 후회, 유감","I ___ not studying harder for the exam."],["nearby","인근의, 가까운 곳의"],["cozy","쾌적한, 아늑한","We sat by the fire in the ___ cabin."],["frown","얼굴을 찌푸리다, 찡그리다"],["blink","눈을 깜빡이다, 깜빡임, 섬광"],["extension","연장(선), 확장, 확대, 내선 번호"],["keen","예리한, 날카로운, 열망하는"],["sacrifice","희생하다, 희생시키다, 희생, 희생물","Parents often ___ their own comfort for their children."],["clothing","의복, 의류"],["object","물건, 물체, 반대하다"],["materiality","물질성, 구체성"],["punctuate","간간이 끼어들다, 구두점을 찍다, 중단시키다"],["parallel","나란히, 평행하여, 나란히 가는, 평행한, 일치하는, 유사한, 평행인 것, 유사"],["complement","보완하다, 보충하다, 보완(물), 보충(량)"],["ritual","의식, 관례, 의식상의, 의식을 위한","Drinking tea every morning is a daily ___ for him."],["collective","집단의, 공동의"],["unstable","불안정한, 변하기 쉬운"],["peer","또래, 동료 집단"]]],[18,[["acquaintance","지인, 아는 사람, 면식","He is just an ___, not a close friend."],["statesman","정치인, 정치가, 경세가","The wise ___ helped to end the long war."],["outline","개요, 윤곽, 개요를 서술하다, 윤곽을 그리다"],["radical","극단적인, 근본적인"],["remarkable","뛰어난, 놀라운, 현저한","She made ___ progress in just three months."],["mimic","모방하다, 흉내 내다"],["harsh","가혹한, 냉혹한, 혹독한","The ___ winter killed many of the farm animals."],["astonish","깜짝 놀라게 하다","The magician's trick will ___ the audience."],["compose","작곡하다, 구성하다","Mozart began to ___ music at the age of five."],["celebrated","유명한, 저명한"],["adversity","역경, 불운","True character is revealed in times of ___."],["enthusiast","애호가, 열성가, 열정적인 팬"],["instrument","악기, 도구, 기구"],["blanket","담요"],["engender","낳다, 발생시키다"],["derive","유래하다, 끌어내다"],["entirety","전체, 전부, 완전"],["sensibility","감정, 감수성"],["relative","상대적인, 비교상의, 친척, 동족"],["consensus","합의, 컨센서스","After a long meeting, the board reached a ___."],["debate","논쟁, 토론, 논쟁하다, 토론하다"],["validity","타당성, 정당성"],["investigate","조사하다, 수사하다","The police will ___ the cause of the fire."],["variable","변수, 변동이 심한, 가변적인"],["content","콘텐츠, 내용(물), 목차, 만족하는, 만족시키다"],["medium","매체, 도구, 수단, 중간의"],["theatrical","연극의, 극장의, 연극"],["resource","자원, 방편, 지략"],["essence","본질, 정수"],["selection","선택, 선발, 선택된 것"]]],[19,[["reputation","평판, 명성","The restaurant has a good ___ for fresh seafood."],["attract","끌어들이다, 불러일으키다","Bright flowers ___ bees and butterflies."],["channel","보내다, (텔레비전·라디오의) 채널"],["dedicated","전용의, 헌신적인, 전념하는"],["tempt","부추기다, 유혹하다","The smell of cake will ___ anyone on a diet."],["suitability","적합성, 적당, 어울림"],["margin","(판매) 이익, 가장자리, 여백","Please write your notes in the ___ of the page."],["financial","재정적인, 금융의"],["unique","고유한, 독특한"],["amount","양, 총액, (양이) 이르다"],["extract","끌어내다, 추출하다, 뽑다, 추출물, 발췌","Scientists ___ DNA from a small blood sample."],["manifestation","표현, 구현물, 징후"],["element","요소, 성분, 원소"],["glue","접착제, 풀, (접착제로) 붙이다"],["presume","추정하다, 전제로 하다, 간주하다"],["popularity","유행, 인기, 대중성"],["merge","합쳐지다, 합치다, 병합하다","The two small companies decided to ___ into one."],["compliance","준수, 순응"],["variation","변이, 변화, 변형, 차이"],["crucial","매우 중요한, 결정적인","Water is ___ for survival."],["insistence","고집, 주장"],["trace","흔적, 극미량, 추적하다"],["moisture","수분, 습기"],["drainage","배수, 배수 시설"],["emperor","황제, 제왕"],["expand","넓히다, 확장하다"],["symbolize","상징하다, 나타내다","A white dove is often used to ___ peace."],["priority","우선 사항, 우선 과제, 우선순위"],["private","비공개의, 전용의, 사적인, 은밀한"],["anchor","고정하다, (~에) 단단히 기반을 두게 하다, 닻, 정신적 지주"]]],[20,[["migrate","옮기다, 이주하다","Many birds ___ south for the winter."],["bark","나무껍질, (개 등이) 짖는 소리, (개 등이) 짖다"],["starve","굶주리다, 굶기다","Without food, the animals will ___."],["screen","선별하다, 가리다, 스크린, 화면"],["analyze","분석하다"],["assign","부여하다, 배정하다"],["typical","전형적인, 보통의"],["reinforce","강화하다","Workers tried to ___ the wall before the storm."],["magnify","확대하다, 증대시키다","A microscope can ___ tiny objects."],["purpose","목적, 의도"],["location","장소, 위치"],["intellectual","지적인, 지능의, 지식인"],["passion","열정"],["publication","저작(물), 출판, 공개"],["contribution","기여, 공헌"],["retirement","은퇴, 퇴직"],["scenic","경치가 좋은, 경관이 좋은, 아름다운, 극적인","We took a ___ drive along the coast."],["maximum","최대, 최대한(도)"],["refund","환불, 환불하다","The shop gave me a ___ because the shirt was damaged."],["guardian","보호자, 수호자, 후견인","A legal ___ takes care of a child when the parents cannot."],["manipulation","조작, 조종"],["assemble","조립하다","It took us two hours to ___ the bookshelf."],["complexity","복잡(성)"],["emergent","창발적인, 새로 출현한, 신생의, 신흥의"],["commonplace","평범한, 매우 흔한, 흔한 일"],["originality","독창성, 창의성","The judges praised the ___ of her painting."],["resort","의존하다, 리조트, 휴양지, 의지, 호소"],["stereotype","고정 관념"],["inhibit","억제하다, 방해하다","Cold weather can ___ the growth of some plants."],["victim","피해자, 희생자"]]],[21,[["document","문서, 서류, 기록하다"],["waste","낭비, 쓰레기, 폐기물, 낭비하다"],["envelope","봉투","She put the letter in an ___ and sealed it."],["coordination","조화, 조정, 조직"],["deny","거부하다, 거절하다, 부인하다"],["institution","시설, 기관, 제도"],["restriction","제한, 통제, 규제","There is a speed ___ on this road."],["mutual","상호의, 상호 간의, 공동의","They have a ___ respect for each other."],["vehicle","수단, 차량"],["frustration","좌절(감), 불만","He felt ___ when the computer froze again."],["maintain","유지하다"],["praise","칭찬, 칭송, 칭찬하다, 칭송하다"],["strive","노력하다, 분투하다"],["greet","인사하다, 맞이하다, 환영하다"],["constitute","구성하다, (~이) 되다"],["coded","규정된, 암호화된"],["imply","암시하다, 내포하다","His silence seemed to ___ that he disagreed."],["grab","붙잡다, 먹다, 마시다, 움켜잡다, (잠깐) ~하다"],["post","게시하다, 발송하다, 기둥, 직책, 일자리"],["statistics","통계, 통계 자료"],["announce","표명하다, 발표하다"],["downplay","대단치 않게 생각하다, 경시하다, 축소하다"],["optimistic","낙관적인, 낙천적인","Despite the failure, she stayed ___ about the future."],["intelligent","똑똑한, 지능을 가진, 지능적인"],["formulate","만들어 내다, 표현하다"],["thrive","번성하다, 성공하다","Cacti ___ in dry, hot deserts."],["chase","쫓다, 추적하다, 추적"],["accelerate","가속화되다, 가속화하다","The car began to ___ as it entered the highway."],["annual","연간의, 연례의, 매년의, 연감, 일년생 생물","The school holds an ___ sports festival every autumn."],["stuffed","속을 채운, 박제된"]]],[22,[["separable","분리할 수 있는"],["posture","자세","Sitting up straight improves your ___."],["verbal","언어적인","He gave a ___ agreement, but nothing was written down."],["predict","예측하다, 예보하다","No one can ___ the weather exactly a month ahead."],["acceptance","수용, 인정"],["vital","필수적인, 매우 중요한, 생명 유지에 필수적인","Sleep is ___ for good health."],["evolve","진화하다, 진화시키다","Animals ___ over millions of years to survive."],["reach","도달하다, 연락하다"],["rationale","근거, 이유"],["appreciate","제대로 인식하다, 감사하다, 감상하다"],["reassure","안심시키다","The doctor tried to ___ the nervous patient."],["approximate","어림잡다, 근사치를 계산하다, 근사치인, 거의 정확한"],["interact","상호 작용을 하다"],["judgment","판단"],["instinct","본능"],["intuitive","직관적인"],["equivalent","상당하는, 상당[대응]하는 것","One kilometer is ___ to 1,000 meters."],["indication","사례, 암시, 표시","Dark clouds are an ___ that rain is coming."],["examine","조사하다, 검토하다"],["occur","일어나다, 발생하다"],["successive","연속된, 잇따른"],["sum","합, 총계, 합하다"],["consciousness","의식"],["invisible","보이지 않는, 감추어진"],["external","외적인, 외부의"],["breakthrough","비약적인 발전, 돌파구","Scientists announced a major ___ in cancer research."],["immediate","즉각적인, 당장의"],["discard","버리다, 폐기하다"],["algorithm","알고리즘, 일련의 산법"],["unfold","전개되다, 펼쳐지다"]]],[23,[["informative","유익한, 정보를 주는","The documentary was very ___ and taught me a lot."],["extensive","광범위한, 광대한","The library has an ___ collection of rare books."],["obtain","존재하다, (상을) 받다, 얻다","You need a visa to ___ permission to enter the country."],["descriptive","기술적인, 묘사하는, 서술하는"],["constraint","제약, 제한, 구속","Lack of money is a major ___ on the project."],["probability","확률","There is a high ___ of rain tomorrow."],["upward","상향의, 상승의"],["dialogue","대화"],["primer","기본 지식, 입문서"],["recollection","기억, 회상"],["self-esteem","자존감, 자부심"],["subject","(실험) 대상자, 주제, 교과목, 종속하는, 지배하에 두다, 종속시키다"],["consistently","일관되게, 지속적으로"],["literate","문해력의, 지식이 있는"],["repressive","억압하는, 억압적인"],["mass","(일반) 대중, 대부분, 질량"],["privileged","특권의, 특별히 선택된"],["profound","깊은, 심오한","The book had a ___ effect on my thinking."],["attribute","속성, 자질, ~에 돌리다"],["artificial","인공의, 인공적인","___ flowers never die, but they have no scent."],["implant","이식하다"],["evidence","증거"],["decline","쇠퇴, 감소하다, 기울다","The number of students in rural schools continues to ___."],["prestige","명망, 명성","Winning the prize brought great ___ to the school."],["enhance","증대하다, 향상하다"],["complicated","복잡한"],["sensation","자극, 감각"],["agricultural","농업의"],["elaborate","정교한, 공들인, 상술하다"],["metaphorical","은유적인, 비유적인"]]],[24,[["horizon","시야, 앞길, 지평","The sun slowly sank below the ___."],["enemy","적, 원수","The two armies became bitter ___."],["alternative","대안, 대안적인","If the bus is late, is there an ___ route?"],["legitimate","정당화하다, 타당한, 정당한","He gave a ___ reason for being absent."],["assessment","평가"],["geology","지질(학)"],["abundant","풍부한, 많은","The island has ___ fresh water."],["productive","생산의, 생산적인","It was a ___ meeting that solved many problems."],["measure","측정하다, 조치"],["budget","예산, 예산을 세우다"],["inability","하지 못하는 것, 무능"],["integrity","진실성","A person of ___ always tells the truth."],["empathy","공감"],["craft","(공들여) 만들다, 공예, 솜씨"],["presence","존재(감)"],["drastic","급진적인, 급격한, 과감한","The company took ___ measures to cut costs."],["income","소득, 수입"],["attempt","시도, 시도하다"],["ethical","윤리적인, 도덕상의","It is not ___ to copy another student's work."],["detached","분리된, 떨어져 있는, 치우치지 않는"],["dynamic","역학 관계, 역학, 역동적인, 동적인"],["intention","의도, 목적"],["progress","진보, 진행 상황, 발전하다, 전진하다"],["contemplative","관조적인, 사색적인"],["welfare","복지"],["captive","(붙잡혀서) 사육되는, 사로잡힌, 포로의, 포로"],["candidate","후보"],["inevitably","필연적으로"],["process","과정, 처리하다, 가공하다"],["prospect","가능성, 전망"]]],[25,[["stable","안정적인","The economy has been ___ for several years."],["define","정의하다","Can you ___ the word \"justice\" in your own words?"],["float","떠다니다, 뜨다, 띄우다","Oil can ___ on water."],["auditory","청각적인"],["pose","제기하다, 자세, 포즈"],["highlight","부각시키다, 강조하다, 가장 밝은 부분, 하이라이트"],["mainstream","주류의, 주류, 본류"],["discovery","발견, 발각"],["exhibit","보이다, 전시하다, 공연, 전시","The museum will ___ ancient tools next month."],["dialect","방언, 지방어, 방언의"],["ecological","생태계의, 생태 친화적인"],["intervention","개입, 중재"],["urgent","시급한, 긴급한","The patient needs ___ medical care."],["regulate","규제하다, 조절하다","A thermostat helps ___ the room temperature."],["adequate","적절한, 충분한","The room had ___ light for reading."],["promotion","증진, 승진, 홍보","She worked hard and got a ___ at her company."],["inhumanely","비인간적으로"],["descendent","후대의, 전해 내려오는, 낙하하는"],["considerable","상당한, 중요한"],["formative","형성하는, 형태를 구성하는"],["accomplish","달성하다, 완수하다"],["attainment","도달, 달성"],["discipline","(학문의) 분야, 과목, 훈육, 훈육하다"],["fatigue","피로, 피곤","Long driving can cause ___ and lead to accidents."],["pursuit","추구, 추적"],["maturity","성숙도, 성숙"],["pattern","패턴, 무늬, 견본"],["so-called","소위, 이른바"],["drip","물방울, (똑똑) 떨어지다"],["emerging","새로 등장하는, 새로 나타나는"]]],[26,[["distinctive","독특한, 구별이 분명한","The tower has a ___ shape that is easy to recognize."],["voice","발언권, 목소리, 소리를 내다"],["acknowledge","인정하다, 승인하다","He refused to ___ his mistake."],["unwritten","암묵적인, 불문율의"],["upright","똑바로 선, 수직의","Please keep your seat in an ___ position during takeoff."],["trunk","줄기, 몸통"],["efficiency","효율(성), 능률","The new machine improved the ___ of the factory."],["inhabit","거주하다, 서식하다, 살다"],["barrier","장벽, 울타리","The language ___ made communication difficult."],["collaborate","협업하다, 협력하다","Scientists from many countries ___ on this project."],["spontaneously","자발적으로, 자생적으로"],["invasion","침공, 침입"],["retailer","소매상, 소매업자"],["wholesaler","도매상, 도매업자"],["contact","접촉하다, 연락하다, 소통, 접촉"],["logically","논리적으로"],["interaction","상호 작용"],["ongoing","지속적인"],["irrational","비이성적인, 불합리한","His fear of harmless spiders is completely ___."],["initial","초기의, 처음의"],["adaptive","적응성이 있는, 순응하는"],["variant","변형, 변종, 다른, 상이한"],["intensity","강렬함, 강도"],["duplicate","모방하다, 복사하다"],["instance","사례, 경우"],["exclusive","전용의, 독점적인"],["substantial","상당한, 꽤 많은","He earned a ___ amount of money last year."],["coverage","중계, 보도, 범위"],["generation","세대, 자손"],["remote","멀리 있는, 외진, 원격의","The village is so ___ that it takes a day to reach."]]],[27,[["induce","유도하다, 권유하다, 귀납적으로 추론하다","Some medicines ___ sleep."],["classification","분류, 분류법","The ___ of animals into groups helps scientists study them."],["issue","문제, 지급하다, 발행하다"],["firm","기업, 회사, 단호한, 단단한"],["plain","완전히, 순전히, 평범한, 간단한, 명백한"],["repetition","반복, 되풀이"],["durable","오래 지속되는, 유지되는, 튼튼한","These boots are ___ enough for years of hiking."],["deviant","규범에서 벗어난, 일탈적인, 정상이 아닌"],["bullying","괴롭힘, 따돌림","The school launched a campaign to stop ___."],["implication","영향, 시사점, 함축","The ___ of the new law is that prices will rise."],["vast","광대한, 막대한","The Sahara is a ___ desert."],["pervasive","만연한, 널리 퍼지는"],["reign","치세, 통치, 통치하다, 지배하다"],["neutral","중립적인, 애매한","Switzerland stayed ___ during the war."],["reality","현실, 진실"],["interpretation","해석, 설명","Each critic offered a different ___ of the poem."],["hypothetical","가상의, 가설적인"],["elect","결정하다, 선출하다"],["source","출처, 원천"],["designation","(특정 목적을 위한) 직무, 직위, 명칭"],["dwelling","집, 주거지"],["communal","공동체의, 공동의"],["motor","운동의, 원동(력)의"],["rebel","반발하다, 반항하다, 반역자, 모반자"],["urban","도시의, 도회지에 있는"],["biodiversity","생물 다양성, 종 다양성","Rainforests are rich in ___."],["promote","촉진하다, 증진하다, 홍보하다"],["inequality","불평등, 불공평"],["merrily","즐겁게, 유쾌하게"],["reply","대답하다, 응답하다, 답변, 응답"]]],[28,[["relieve","안도하게 하다, 안도하다, 덜다","A warm bath can ___ muscle pain."],["enormous","매우 큰, 엄청난","An ___ wave crashed against the shore."],["atmospheric","대기의, 분위기 있는"],["erode","저하시키다, 약화시키다, 침식시키다","Heavy rain can ___ the soil on hills."],["severe","심각한, 혹독한"],["volume","양, 부피, 체적"],["decode","해석하다, 해독하다","Spies learn to ___ secret messages."],["conversation","대화, 대담"],["division","구분, 부문, 분할"],["habitat","서식지, 거주지","Cutting down forests destroys the ___ of many animals."],["utilize","활용하다, 소용되게 하다","We can ___ solar energy to power homes."],["ecosystem","생태계","A coral reef is a fragile ___."],["disposal","처리, 처분"],["procedural","절차의, 절차상의"],["workforce","노동 시장, 노동력"],["transaction","거래, 처리"],["inevitable","피할 수 없는, 부득이한"],["opportunity","기회"],["likelihood","가능성, 있음 직한 일"],["wage","임금, 급료","Workers demanded a higher hourly ___."],["immerse","잠수하다, (액체 속에)잠그다, 몰입하게 하다"],["fever","열, 열기"],["temporal","시간의, 일시적인, 잠시의"],["subjective","주관적인, 주관의","Taste in music is highly ___."],["worldview","세계관"],["political","정치적인, 정치에 관한"],["tissue","(세포들로 이뤄진) 조직, 화장지"],["correlate","~과 상관관계가 있다"],["occupy","차지하다, 점유하다, 점령하다"],["compound","화합물, 혼합물"]]],[29,[["reaction","반응, 반작용"],["longevity","수명, 장수"],["deliberate","의도적인, 계획적인","It was a ___ choice, not an accident."],["reproductive","번식의, 생식의"],["variability","변동성, 변하기 쉬움"],["rearing","양육"],["still","가만히 있는, 정지한, 여전히"],["intrigue","흥미를 일으키다, 흥미를 끌다"],["scarce","희소한, 부족한","Water is ___ in the desert."],["rival","경쟁적인, 경쟁자의, 경쟁자, 경쟁하다","The two ___ teams fought for the title."],["patent","특허를 얻다, 특허권, 특허의, 특허권을 가진","The inventor applied for a ___ on his new device."],["resilience","회복 탄력성, 회복력, 탄력","Her ___ helped her recover from many setbacks."],["primitive","원초적인, 원시적인","Early humans used ___ tools made of stone."],["lifespan","수명","The average ___ of a dog is about thirteen years."],["overwhelming","압도적인, 저항할 수 없는"],["lack","~이 없다, 부족하다, 부족, 결핍"],["consensual","합의적인, 합의로 이루어진"],["liberation","해방, 석방"],["arrogance","오만(함), 건방짐"],["overcome","극복하다, 이겨 내다","She worked hard to ___ her fear of public speaking."],["sensitivity","민감도, (세심한) 감수성"],["provoke","유발하다, 일으키다"],["consumption","소비, 소모"],["foundation","기반, 기초, 재단"],["mode","방식, 양식"],["outgroup","외집단"],["ridicule","조롱, 비웃음, 비웃다"],["yield","수확량, 수익, 생기게 하다, 산출하다"],["artifact","작품, 인공물, 가공물"],["resemble","~과 닮다, ~과 비슷한점이 있다","The twins ___ each other closely."]]],[30,[["spectator","관람자, 관중, 구경꾼","Thousands of ___ filled the stadium."],["departure","벗어남, 출발"],["jury","배심원(단), 심사 위원","The ___ found the defendant not guilty."],["witness","증인, 목격자, 목격하다, 증언하다"],["compromise","훼손하다, 위태롭게 하다, 타협하다, 타협, 절충","After long talks, the two sides reached a ___."],["tray","쟁반, 상자"],["comparison","비교, 비유"],["exert","발휘하다"],["deplete","고갈시키다, 빼앗다","We must not ___ our natural resources."],["attractive","매력적인, 사람의 마음을 끄는"],["retrieve","찾아내다, 되찾다","My dog was trained to ___ the ball."],["static","정적인, 멈춰 있는, 고정된"],["territory","지역, 영역, 영지","The eagle defends its ___ from intruders."],["proportion","부분, 비율"],["condemn","비난하다","Leaders around the world ___ the attack."],["obey","따르다, 복종하다","Soldiers must ___ orders."],["opposite","반대의, 맞은편의"],["audience","청중, 관객"],["capable","할 수 있는, 유능한"],["continent","육지, 대륙"],["recover","회복하다, 되찾다"],["illegally","불법적으로"],["dominant","지배적인, 우세한, 유력한"],["prosperity","번영, 호황","Trade brought ___ to the port city."],["state","상태, 국가, 주장하다, 진술하다"],["tariff","관세"],["hospitality","환대, 후한 대접"],["fluctuation","변동, 동요"],["implement","시행하다, 이행하다, 도구, 기구"],["expendable","쉽게 희생될 수 있는, 소모성의"]]],[31,[["discrimination","차별, 구별","Laws protect people from ___ at work."],["undermine","훼손하다, 약화시키다","Rumors can ___ a leader's authority."],["untapped","미개척의, 개발되지 않은"],["absorb","흡수하다, 몰입시키다","Sponges ___ water quickly."],["genetic","유전적인, 기원의","Eye color is a ___ trait."],["replicate","복제하다, 반복하다, 복제된 것"],["censorship","검열","Writers protested against government ___."],["impose","부과하다, 강요하다","The school decided to ___ stricter rules."],["trendy","유행하는"],["appreciation","이해, 감사, 감상"],["invoke","환기하다, 불러일으키다"],["method","방법, 방식"],["appraisal","평가, 감정"],["entrepreneur","기업가, 사업가","The young ___ started her own company at nineteen."],["synergy","시너지, 상승 효과"],["draft","설계하다, ~의 기초를 만들다, 프로 신인 선수 선발, 밑그림"],["accumulate","축적하다, 모으다","Dust will ___ if you never clean the shelf."],["core","핵심적인, 코어 근육, 핵심, 정수"],["flexible","유연한, 융통성이 있는"],["intact","온전한, 손상되지 않은","The vase arrived ___ without a single crack."],["consumer","소비자"],["spatial","공간적인, 공간의"],["layout","배치, 구조, 설계"],["grant","부여하다, 수여하다, 주다"],["adopt","채택하다, 받아들이다"],["currency","통화, 화폐"],["autonomy","자율성, 자치권"],["contemplate","고려하다, 심사숙고하다"],["obscure","가리다, 어둡게 하다, 모호한, 이해하기 힘든"],["navigation","항해, 운항"]]],[32,[["nocturnal","야간의, 야행성의","Owls are ___ animals that hunt at night."],["landmark","주요 지형지물, 육상 지표, 획기적인 사건","The Eiffel Tower is a famous ___ in Paris."],["urge","충동, 촉구하다"],["hierarchy","계층, 계급","A strict ___ exists in the army, from soldiers to generals."],["persuade","설득하다","I tried to ___ him to join our club."],["represent","표현하다, 나타내다"],["degraded","훼손된, 오염된"],["distortion","왜곡"],["tension","긴장, 팽팽함","There was great ___ in the room before the results came out."],["review","검토하다, 회고하다, 재검토, 재조사"],["article","논문, 기사"],["outstanding","뛰어난, 중요한, 눈에 띄는"],["leash","목줄, 사슬, 속박하다"],["tremble","떨리다, 떨다, 전율하다, 떨림, 전율","His hands began to ___ with fear."],["illusion","착각, 환영","The water in the desert was only an optical ___."],["term","용어, 기간, 부르다, 이름 짓다"],["precise","정확한, 정밀한"],["sprout","나게 하다, 발아하다, 새싹, 발아","Seeds will ___ in a few days if you water them."],["grain","한 알, 낟알, 곡류, 낟알로 만들다"],["tale","이야기, 설화"],["value","가치, 값, 평가하다, 가치를 매기다"],["transmit","전달하다, 보내다, 발송하다"],["charity","자선 단체, 자애, 자비"],["seek","추구하다, 찾다, 탐색"],["relevance","관련성, 연관성, 타당성"],["infinite","무한한, 끝없는, 무한대, 무한한 공간","Space seems ___ in size."],["respectively","각각"],["sponsor","주관하다, 후원하다, 후원자, 보증인"],["cause","대의, 원인, 이유, 초래하다, 일으키다"],["apron","앞치마, 앞치마를 두르다"]]],[33,[["parental","양육의, 부모의"],["devote","쏟다, 바치다","She chose to ___ her life to science."],["labor","노동, 근로","Child ___ is illegal in many countries."],["dimension","차원, 치수","A cube has three ___: length, width, and height."],["shift","전환하다, 옮겨 가다, 전환, 변화"],["ignorant","의식하지 못하는, 무지의","He was ___ of the rules, so he broke them by accident."],["virtue","미덕, 선행","Patience is a ___ that everyone admires."],["dilemma","딜레마, 궁지","She faced a ___ between two good colleges."],["embrace","받아들이다, 포용하다"],["default","기본 설정, 불이행"],["continuum","연속체"],["superficial","표면적인, 피상적인","The cut was only ___, so it healed quickly."],["enterprise","탐구 활동, 사업"],["deduce","도출하다, 추론하다, 연역하다","Detectives ___ the culprit from small clues."],["ingest","섭취하다, 수집하다"],["impaired","손상된, 망가진, 고장 난"],["subtle","미묘한, 포착하기 힘든"],["transport","데려가다, 운반하다"],["ethnic","민족적인, 민족 특유의"],["graduate","졸업생, 졸업하다, 졸업생의"],["overtly","명백하게, 공공연하게"],["fragile","취약한, 깨지기 쉬운","Handle the ___ glass carefully."],["evident","분명한, 명확한"],["enrollment","(시험의) 등록자 수, 등록"],["generalize","일반화하다, 개괄적으로 말하다"],["subsequent","그다음의, 차후의"],["status","지위, 상태"],["threat","위협, 협박"],["opponent","상대방, 반대하는"],["maintenance","유지 관리, 보수"]]],[34,[["facility","시설"],["venue","(행사) 장소","The concert ___ was packed with fans."],["legendary","전설적인, 유명한","Pelé is a ___ football player."],["approach","다가오다, 다가가다, 접근 방식"],["scrap","(특히 종이·옷감 등의)조각, 폐품, 폐물"],["gratitude","감사, 고마움","She expressed her ___ for the kind help."],["heartfelt","진심 어린","He wrote a ___ letter of thanks."],["discretion","신중함, 재량(권)"],["nuisance","남에게 폐가 되는 사람, 성가신 일","The noisy neighbor was a real ___."],["sheer","엄청난, 순전한, 완전한"],["offence","불쾌함, 모욕, 화나게 하는 행위"],["viral","바이럴의, (인터넷 등에서) 입소문이 퍼지는, 바이러스(성)의"],["infect","영향을 미치다, 전파하다, 감염시키다"],["exponential","기하급수적인, 급격한","The population showed ___ growth, doubling every year."],["endorsement","추천, 보증"],["gaze","시선, 눈길"],["exploit","이용하다, 활용하다, 착취하다","It is wrong to ___ workers by paying them too little."],["posit","상정하다, (~을 사실로)가정하다"],["predominant","지배적인, 주된"],["minority","소수, 소수 집단, 미성년"],["associate","연관 짓다, 동료"],["eminent","저명한"],["relentless","끈질긴, 가차 없는","The ___ rain lasted for days."],["extraordinary","비범한"],["exceed","초과하다, 초월하다","Do not ___ the speed limit."],["quarter","4분의 1, 분기"],["doctorate","박사 학위"],["immigrant","(다른 나라로 온) 이민자"],["degree","학위, 정도, 등급"],["bachelor","학사, 미혼남"]]],[35,[["scholarship","장학 기금, 장학금","He won a ___ to study abroad."],["rotate","회전하다","The Earth takes one day to ___ once on its axis."],["flicker","깜빡거림, 깜빡이다","The candle began to ___ in the wind."],["sleepover","자고 가기, 함께 자며 놀기"],["overnight","하룻밤의, 야간의"],["await","기다리다","We ___ your reply."],["encounter","(우연한) 만남, 조우, 마주하다, 맞닥뜨리다"],["freshwater","민물, 민물의"],["catalogue","목록화하다, 목록"],["archive","기록물, 기록 보관소, (문서 등을) 보관하다"],["multilayered","다층적인"],["robust","탄탄한, 견고한","The plant is ___ and survives cold weather."],["terminology","(집합적으로) 용어(들), 전문 용어"],["pertinent","관련 있는"],["breed","번식하다, 낳다, 기르다"],["credibility","신뢰도, 신뢰성","The scandal damaged her ___ as a reporter."],["narrative","이야기"],["summarize","요약하다","Please ___ the story in three sentences."],["rate","평가하다, 여기다, 속도"],["competence","능력"],["flavor","맛을 내다, 풍미, 맛"],["colony","집단, 군집, 식민지","Ants live together in a large ___."],["draw","끌어당기다, 그리다, 추첨, 제비뽑기, 무승부"],["salient","현저한, 두드러진"],["distance","거리를 두다, 거리"],["predecessor","이전 것, 전신"],["integral","필수적인"],["reciprocity","상호성"],["stake","지분, 이해관계, 관련, 말뚝, 내기, (돈·생명 등을) 걸다, 말뚝을 박아 표시하다"],["peculiar","특유의, 독특한","There was a ___ smell in the room."]]],[36,[["circuit","회로, 순환","The electric ___ stopped working."],["contagious","전염성이 강한","Colds are ___, so cover your mouth when you cough."],["potential","잠재적인, 잠재력"],["potent","강력한"],["whisper","속삭이다","Please ___ in the library."],["possibility","가능성"],["thoughtful","사려 깊은, 친절한"],["sequence","순서, 서열"],["assert","주장하다, 행사하다, 발휘하다","He tried to ___ his innocence."],["perpetual","끊임없는"],["argument","논증, 주장"],["disprove","반박하다, ~의 반증을 들다"],["empirical","경험적인, 실증적인","Science relies on ___ evidence from experiments."],["transition","전환"],["unprecedented","전례 없는"],["transformation","변화, 전환"],["tremendous","엄청난"],["component","구성 요소"],["starchy","전분이 많은"],["enzyme","효소","An ___ in saliva starts to break down starch."],["ancestor","조상"],["toxin","독소","The plant produces a ___ that harms insects."],["hardwire","(행동 양식을) 고정화시키다, 굳어 버리게 하다"],["spoilage","부패","Refrigeration helps prevent food ___."],["sip","한 모금, 한 모금 마시다"],["criticism","비판"],["tap","(가볍게) 톡톡 두드리다, (가볍게) 두드리기, 수도꼭지"],["sparkle","반짝이다"],["evade","피하다, 모면하다","The thief tried to ___ the police."],["ensemble","앙상블(합주단), 총체, 전체적인 효과"]]],[37,[["given","~을 고려하여"],["district","지구, 구역"],["facilitate","가능하게 하다, 용이하게 하다, 촉진하다","Computers ___ communication across the world."],["availability","(참석, 이용 등의) 가능성"],["resume","재개하다, 이력서","The game will ___ after the rain stops."],["pound","두근거리다, (세게) 두드리다"],["grip","꽉 쥐다, 그립(미끄럼 방지 처리가 된 손잡이)"],["fade","사라지다, 희미해지다","Colors ___ in strong sunlight."],["vibration","진동, 떨림","The ___ of my phone woke me up."],["grin","활짝 웃음, 활짝 웃다"],["howl","소리를 지르다, 울부짖다"],["illiteracy","문맹"],["standardize","표준화하다","The company wants to ___ its products."],["overestimate","과대평가하다"],["context","(어떤 일의) 맥락, 상황"],["estimate","추정하다, 추정(치), 견적서"],["disclose","밝히다, 드러내다","The company refused to ___ the details."],["comply","순응하다, 따르다","All drivers must ___ with the rules."],["specify","명시하다"],["spiritual","정신적인"],["wholeheartedly","전적으로, 진심으로"],["nurture","육성하다, 돌보다, 양육하다"],["conduct","실시하다, 진행하다, 행동"],["constructivist","구성주의적인, 구성주의자"],["sphericity","구형성, 구형도"],["stationary","고정된, 멈추어 있는, 정지된","A ___ bike stays in one place while you pedal."],["realm","범위, 영역"],["pivotal","중추적인, 중심이 되는","She played a ___ role in the victory."],["critical","중요한, 비판적인"],["integration","통합"]]],[38,[["proficiency","능력, 숙달(도)","Her ___ in English is excellent."],["optimize","최적화하다, 최대한 잘하다","Engineers ___ the engine's performance."],["attentiveness","세심함, 주의 깊음"],["stakeholder","이해 당사자, 주주"],["respondent","응답자"],["license","면허자격"],["transatlantic","대서양 횡단의"],["addition","추가, 덧셈"],["endangered","멸종 위기의","The tiger is an ___ species."],["logging","벌목"],["enclosure","울타리(를 친 곳), 구내, 우리"],["foraging","(먹이) 채집하기"],["vegetation","식물, 식생, 초목","Dense ___ covers the island."],["tolerate","견디다, 용인하다","I can't ___ the noise any longer."],["layer","층, 겹"],["pebble","자갈, 조약돌","He threw a ___ into the lake."],["damp","축축한, 적시다, 축축하게 하다","The basement is ___ and cold."],["adjust","조정하다, 적응하다"],["display","표시하다, 전시하다, 전시, 진열"],["entity","독립체"],["marginal","중요하지 않은, 한계의"],["claim","주장하다, 주장"],["humility","겸손","A great leader shows ___."],["allegedly","주장에 의하면, 전해지는 바에 의하면"],["barely","겨우, 가까스로, 거의 ~ 아니게"],["temptation","유혹"],["negligible","무시해도 될 정도의","The cost is ___, so it won't change the budget."],["duty","의무, 업무"],["justification","정당화, 타당한[정당한] 이유"],["capital","자본, 수도, 대문자"]]],[39,[["dawn","새벽","We woke at ___ to watch the sunrise."],["simultaneous","동시적인","The two explosions were ___."],["synchronous","동시적인, 동시에 발생하는"],["phase","단계, 시기"],["commitment","몰두, 전념, 헌신, 약속"],["freight","짐, 화물","The train carries ___ across the country."],["preceding","선행하는, 이전의, 앞선"],["notification","알림"],["boredom","지루함, 권태, 따분함","He yawned out of ___."],["embedded","내장된, 내포된"],["indebtedness","빚, 은혜를 입음, 채무"],["estate","토지, 재산, 부동산"],["tract","토지, 넓은 면적[지역]"],["depopulate","인구를 감소시키다"],["acute","심각한, 급성의, 급격한","She felt an ___ pain in her stomach."],["trait","특성","Honesty is a good ___."],["intimate","친밀한"],["withdrawal","철수, 회수, 인출"],["recession","경기 침체기, 경기 침체","The economic ___ caused many job losses."],["transitory","일시적인, 순간적인"],["expectation","기대"],["convince","설득하다","I will ___ him to come with us."],["fundamental","근본적인, 기본적인"],["practice","관행, 연습, 연습하다"],["inertia","관성, 타성, 무력","A moving object has ___, so it keeps moving."],["pregnancy","임신"],["suffocating","숨 막히는, 질식할 것 같은"],["glance","흘긋 보다, 빠르게 훑어보다, 흘긋 봄"],["clench","뒤틀리다, 꽉 쥐다"]]],[40,[["inference","추론","The detective's ___ from the clues was correct."],["stubborn","다루기 어려운, 완고한","My ___ brother never listens to advice."],["existing","기존의, 존재하는"],["payroll","급여 명부, 급여 비용"],["mediator","매개자, 중재자","A ___ helped solve the dispute between the two sides."],["enable","가능하게 하다, 하게 하다"],["provide","제공하다, 공급하다"],["fairy","상상의, 요정의, 동화, 요정"],["discriminatory","차별적인"],["violate","위반하다, 침해하다","Drivers who ___ traffic laws must pay fines."],["regular","정기적인, 일반의"],["customer","고객, 이용자"],["utilitarian","실용적인, 공리주의의, 공리주의자"],["ceremony","의식, 예식","The graduation ___ was held in the gym."],["anthropologist","인류학자","The ___ studied the customs of the tribe."],["pleasure","즐거움, 쾌락"],["satisfaction","만족, 충족"],["tricky","까다로운, 어려운, 곤란한","The math question was ___, and many students got it wrong."],["reduce","줄이다, 감소하다, 축소하다"],["torment","고통을 주다, 괴롭히다, 고문하다, 고통, 고뇌, 고문"],["sympathetic","공감이 가는, 교감의, 호의적인"],["poison","독, 독약, 유해 물질, 아프게 하다, 독을 넣다","The snake's ___ is deadly."],["familiarity","익숙함, 친숙함"],["annoying","짜증을 유발하는, 성가신, 신경 쓰이게 하는"],["divorce","이혼, 분리, 이혼하다, 분리하다"],["defense","방어 (태세), 방어(력)","The team's ___ was so strong that no one could score."],["patron","후원자, (단골) 고객, 후원하다"],["aim","목표하다, 목표"],["reasonable","합리적인, 이치에 맞는"],["merit","가치, (칭찬·관심 등을)받을 만하다"]]],[41,[["personnel","담당자, 인력, (회사의) 인사과"],["generative","생성의, 발생의","___ AI can create new images from text."],["trillion","1조"],["manual","설명서, 입문서, 수동의, 손으로 하는"],["trivial","사소한, 하찮은, 간단한","It is a ___ matter, so don't worry about it."],["devalue","평가를 절하하다, 가치를 떨어뜨리다","High inflation can ___ a country's money."],["reluctant","꺼리는, 마음 내키지 않는","He was ___ to speak in front of the class."],["articulate","(생각을) 분명히 표현하는, 분명히 표현하다","She can ___ her ideas clearly."],["atmosphere","분위기, 대기, 공기"],["mend","고치다, 수정하다","Can you ___ my torn jacket?"],["likeness","닮음, 유사"],["embarrassing","당혹스러운, 난처한"],["debt","빚, 부채, 신세를 짐"],["achieve","얻다, 달성하다, 성취하다"],["appoint","지정하다, 임명하다","The president will ___ a new minister."],["diffuse","완화하다, 퍼지다, 분산시키다","The smell will ___ through the room."],["establish","구축하다, 세우다, 설립하다"],["innovative","혁신적인"],["expertise","전문성, 전문 지식"],["profession","직업, 전문직"],["amplify","부연하다, 더 자세히 진술하다, 증폭하다"],["surgeon","외과 의사","The ___ performed the operation."],["awe","경외감, 경외심"],["homogeneous","동질적인, 균질한"],["explosion","폭발적인 증가, 폭발"],["strike","치다, 때리다, 공격하다, 파업"],["inquiry","탐구, 연구, 문의"],["compelling","강력한, 설득력 있는"],["bedrock","(튼튼한) 기반, 견고한, 튼튼한"],["partial","부분적인, 불완전한, 편파적인"]]],[42,[["chaos","혼돈, 혼란","The classroom was in ___ when the teacher left."],["path","길, 방향, 계획"],["eternal","영원한, 끊임없는","They promised each other ___ friendship."],["speculation","추측, 숙고, 사색","Rumors and ___ spread quickly after the news."],["ape","유인원"],["benefit","이점, 이익, 이익을 얻다"],["grooming","털 손질, (동물의) 그루밍"],["exclusion","배제, 제외"],["roof","지붕, 옥상"],["disconnect","단절되다, 끊다","Please ___ the charger when it is full."],["task","과업을 맡기다, 업무, 과업"],["alienate","멀어지게 하다, 소외시키다"],["steer","이끌다, 조종하다","He tried to ___ the boat toward the shore."],["equilibrium","균형 (상태), 평형","The system is in ___ when forces are balanced."],["shortage","부족, 결핍","There is a water ___ in the region."],["balance","균형, 저울, 잔고, 균형을 유지하다, 상쇄하다"],["misallocation","오배분, 부적당한 할당"],["standard","표준의, 일반의, 보통의, 표준, 기준, 규격"],["strip","박탈하다, 빼앗다, 벗겨 내다"],["option","선택지, 선택 (사항)"],["count","여겨지다, 여기다, 유효하다, 세다, 계산, 총계"],["uphold","옹호하다, 지지하다","Judges must ___ the law."],["converge","수렴하다, 한 곳에 모이다","Several roads ___ at the central square."],["mold","틀, 주형, 곰팡이, 맞게 하다"],["latitude","위도, 지역, 자유"],["heat","난방하다, 열"],["lengthen","연장하다, 늘이다"],["disease","질병, 질환"],["former","전임의, 이전의, 옛날의, 전자"],["outbreak","발생, 발발"]]],[43,[["temperature","온도"],["outweigh","~보다 더 크다","The benefits ___ the risks."],["coin","만들어 내다, 동전"],["addiction","중독"],["prejudice","편견","He fought against racial ___."],["assault","폭행, 공격, 폭행하다, 공격하다"],["abusive","학대하는, 모욕적인"],["violence","폭력, 폭행, 격렬함"],["prize","소중히 여기다, 상품, 상"],["literary","문헌의, 문학의"],["premise","전제"],["suppression","억압, 억제"],["collapse","붕괴하다, 무너지다, 실패하다, 붕괴, 실패","The old bridge may ___ in a storm."],["moral","도덕적인, 도덕의, 교훈"],["empty","공허한, 비어 있는, 빈"],["misconception","오해, 그릇된 생각","It is a common ___ that bats are blind."],["bilingual","이중 언어를 구사하는, 두 개 언어를 할 줄 아는, 이중 언어 사용자"],["organism","유기체, 생물","A bacterium is a tiny living ___."],["signal","신호, 신호를 보내다, 알리다","The red light is a ___ to stop."],["continuity","연속성, 지속성"],["infant","유아","An ___ needs constant care."],["last","지속되다, 마지막의"],["advantage","이점, 장점, 유리하게 하다","Being tall is an ___ in basketball."],["mechanism","메커니즘, 구성, 장치","The clock's ___ is made of tiny gears."],["favor","선호하다, 편애하다, 부탁, 호의, 친절, 편애"],["widen","확장하다, 커지다"],["belonging","소속, 속해 있는 것, (주로 복수로) 소지품"],["reciprocal","상응하는, 답례의, 상호적인"],["personal","개인적인, 개인의"],["outright","드러내 놓고, 명백한"]]],[44,[["clue","단서, 실마리","The detective found a ___ at the scene."],["particular","특정한, 특별한"],["conclusion","결론","After the experiment, we drew a ___."],["precedence","우선(함), 우선권"],["notable","눈에 띄는, 주목할 만한"],["breadth","폭, 너비, 폭넓음"],["equality","평등(함), 대등"],["paradox","역설","It is a ___ that the more choices we have, the less satisfied we feel."],["procedure","(의학적) 처치, 수술, 절차"],["minimize","최소화하다","We should ___ waste to protect the environment."],["companion","동반자, 동행, 친구","The dog was his loyal ___."],["majority","다수, 대부분"],["formation","형성, 형태, 성립"],["scientific","과학적인, 과학의"],["adhere","고수하다"],["hostility","적개심, 적대감","There was open ___ between the two groups."],["manufacture","생산, 제조, 생산하다, 제조하다"],["particle","입자"],["laboratory","실험실","The scientists worked in a ___ all night."],["luxury","사치, 사치스러운"],["adore","흠모하다, 매우 좋아하다","Children ___ their grandparents."],["genius","천재, 천재성"],["adventure","모험, 모험심"],["client","고객, 이용자"],["outfit","복장, 장비, 제공하다, 갖추어 주다"],["caring","배려하는"],["overlook","간과하다, 못 본 체하다, 내려다보다"],["devastate","망연자실하게 하다, 파괴하다, 곤혹스럽게 하다"],["breakdown","붕괴, 고장, 쇠약"],["caterpillar","애벌레","A ___ turns into a butterfly."]]],[45,[["adapt","적응하다, 적응시키다, 조정하다","Animals ___ to their surroundings to survive."],["ceiling","한도, 천장","The lamp hangs from the ___."],["sore","쑤시는, 아픈"],["deterministic","결정론적인"],["predictable","예측될 수 있는, 예측 가능한"],["equation","방정식, 공식","Solve the ___ for x."],["celestial","천체의"],["prospective","예상되는, 장래의"],["solution","해결(책), 용액"],["hypothesis","가설","The scientist tested her ___ with an experiment."],["spit","뱉다"],["drive","욕구, 충동, (조직적인)행사, 운동, 몰아가다"],["opposition","반대"],["conscience","양심","His ___ troubled him after he lied."],["concrete","구체적인"],["disregard","무시하다, 경시하다, 무시, 경시","Don't ___ the safety rules."],["agent","행위자"],["tackle","다루다, 해결하다, 처리하다","We must ___ the problem of pollution together."],["uncover","알아내다, 발견하다","The reporter tried to ___ the truth."],["means","수단, 방법, 재산"],["command","명령하다, 지시를 내리다, 지시, 명령"],["assertion","주장"],["deceptive","속이는, 기만적인"],["pretense","가식"],["enlightenment","깨달음, 계몽"],["neural","신경의","The brain is a network of ___ cells."],["association","연상, 연관(성), 연합, 협회"],["eventuate","귀결되다, 결국 ~이 되다"],["encode","표현하다, 암호화하다, 부호화하다"],["immortal","죽지 않는, 불멸의"]]],[46,[["acquainted","알고 있는, 익숙한"],["disaster","큰 실패, 재해, 재난","The flood was a terrible ___ for the town."],["overconfidence","지나친 확신, 과신","His ___ led him to ignore the risks."],["revise","조정하다, 개정하다, 수정하다","Please ___ your essay before you hand it in."],["transcription","전사, 필사"],["mimicry","흉내, 모방"],["transmission","전승, 전달, 전송"],["identical","동일한","The twins wore ___ clothes."],["clone","복제된 존재, 복제 (생물)"],["heir","후계자, 계승자, 상속인","The prince is the ___ to the throne."],["intensify","심화하다, 강화하다"],["certify","증명하다, 인증하다"],["portray","묘사하다, 그리다","The film will ___ the life of a famous painter."],["niece","조카딸"],["lighten","옅어지다, 밝아지다, 밝게 하다, 가볍게 하다"],["cherish","소중히 여기다, 아끼다","I ___ the memories of my childhood."],["gathering","모임, 채집, 수집"],["massive","거대한, 대규모의, 엄청난"],["genre","장르"],["reliance","의존, 의지"],["clarify","명확히 하다","Could you ___ what you mean?"],["awkward","어색한, 서툰","There was an ___ silence after his joke."],["squeeze","꽉 쥐다, 짜내다"],["infectious","전염성이 있는"],["prioritize","우선하다"],["inventory","목록, 재고"],["framework","체계, 체제"],["proactive","주도적인, 선제적인"],["implementation","시행, 실행, 도입"],["toxic","유해한, 유독성의"]]],[47,[["inclusive","포용적인"],["sustain","(피해 등을) 겪다, 지속하다, 유지하다"],["disturb","방해하다, 교란하다","Please do not ___ the sleeping baby."],["refine","개선하다, 다듬다, 정제하다","The team worked to ___ the design."],["conception","이해, 개념"],["population","개체 수, 주민, 인구","The ___ of Seoul is about nine million."],["uneven","고르지 않은, 울퉁불퉁한"],["surpass","넘어서다, 뛰어넘다","She hopes to ___ her older sister's record."],["senator","상원 의원"],["ignite","불러일으키다, 점화하다","A small spark can ___ a forest fire."],["astronomy","천문학","He studies ___ and loves looking at the stars."],["classify","분류하다","Scientists ___ animals into groups."],["hemisphere","반구"],["retire","은퇴하다"],["install","설치하다","Please ___ the program on your computer."],["unlock","잠금 해제하다, 드러내다, 열다"],["temporary","임시의, 일시적인"],["adrift","표류하는"],["compass","나침반","A ___ always points to the north."],["supervisory","감독의"],["desirable","바람직한"],["skeptical","회의론적인, 회의적인"],["dramatic","극적인"],["concealment","은폐, 숨김"],["affective","감정적인, 정서적인"],["succession","연속, 연쇄"],["contingency","우연(성), 우발(성)"],["resonance","울림, 공명, (비유적으로) 깊은 반향"],["asymmetry","불균형, 비대칭(성)"],["dual","이중의, 이중적인"]]],[48,[["digestible","소화하기 쉬운, 이해하기 쉬운"],["preservative","방부제, 방부의","Jam contains sugar as a natural ___."],["prerequisite","전제 조건"],["nomad","유목민","A ___ moves from place to place with his animals."],["mining","채굴, 채광, 광업"],["settlement","정착지, 정착, 해결"],["sector","부문, 분야"],["deploy","효율적으로 사용하다, 배치하다","The army will ___ more troops to the border."],["marvel","경탄하다, 감탄하다","Visitors ___ at the beauty of the mountains."],["compel","(강하게) 끌다, 강요하다, ~하게 만들다"],["stimulus","자극"],["underplay","과소평가하다"],["characterize","(특징을) 기술하다, 특징으로 하다"],["medicine","약, 의학"],["larva","유충, 애벌레"],["pollen","꽃가루","Bees carry ___ from flower to flower."],["contaminate","오염시키다","Chemicals can ___ the drinking water."],["outcompete","(경쟁에서) 이기다, 앞서다"],["formal","공식적인, 격식을 차린, 형식적인"],["nucleus","핵"],["comparable","비교할 수 있는, 비슷한"],["subatomic","아원자의, 원자보다 작은"],["tentative","잠정적인","We made a ___ plan, but it may change."],["falsify","반증하다, 거짓임을 입증하다, 왜곡하다, 조작하다"],["windscreen","(자동차의) 앞 유리"],["driveway","진입로, 차도"],["tumble","쏟아져 내리다, 우수수 떨어지다"],["mutter","중얼거리다","He began to ___ angrily under his breath."],["mention","언급하다, 말하다"],["tense","긴장한","The athletes felt ___ before the final race."]]],[49,[["intern","인턴(사원), 수련의"],["aspire","포부를 가지다, 큰 뜻을 품다","Many young people ___ to become doctors."],["sigh","한숨, 한숨을 내쉬다","She let out a deep ___ of relief."],["pile","쌓다, 더미, 무더기","There is a ___ of books on my desk."],["thesis","논문, 명제, 주제"],["contradiction","모순, 부인, 반박"],["oblige","의무적으로 하게 하다, ~에게 호의를 베풀다"],["procrastinate","미루다","Don't ___; start your homework now."],["convenient","편리한, 사용하기 좋은","The shop is ___ because it is next to my house."],["nuance","미묘한 차이, 뉘앙스, 미세하게 조정하다"],["shortcoming","단점, 결점"],["encompass","포함하다, 에워싸다"],["mood","기분, 분위기, 풍조"],["heatwave","폭염, 장기간에 걸친 혹서"],["cultivate","기르다, 양성하다, 경작하다","Farmers ___ rice in wet fields."],["correspondent","특파원, 통신원, 일치하는"],["via","~으로, ~을 통해, ~을 경유하여"],["expose","접하게 하다, 노출시키다","The report will ___ the company's secrets."],["connotation","함의, 함축(된 의미)"],["underpin","뒷받침하다, 지지하다"],["arena","격전장, 영역, 무대"],["recurring","반복적인, 순환하는"],["cite","인용하다, 언급하다"],["tough","아주 힘이 센, 어려운, 힘든","The steak was too ___ to chew."],["multitude","많음, 다수"],["solid","고체, 고형, 탄탄한, 고체의"],["cruise","돌아다니다, 순항하다, 크루즈 여행, 순항"],["suggestion","권유, 제안 사항, 암시"],["behave","예의 바르게 행동하다, 움직이다","Please ___ yourself at the dinner table."],["accuracy","정확도, 정확성, 정밀"]]],[50,[["ample","충분한, 넉넉한, 넓은","We have ___ time to finish the work."],["lean","기울다, 기대다, 기울기, 얇은, 깡마른"],["singular","단일의, 유일한, 단수"],["reservoir","저장소, 저수지","The city's drinking water comes from a large ___."],["empower","부여하다, 힘을 실어 주다","Education can ___ women to make their own choices."],["graffiti","(공공장소에 하는) 낙서, 그라피티","Someone painted ___ on the wall of the old building."],["unrecorded","기록되지 않은, 등록되지 않은"],["weed","잡초를 뽑다, 잡초"],["warehouse","창고, 저장소","The goods are stored in a large ___."],["squeak","찍찍 울다, 삑 소리를 내다, 삑 소리"],["subscription","구독, 구독권"],["grateful","감사하는, 고마워하는","I am ___ for your help."],["unease","불안(감)"],["memorable","기억할 만한, 잊기 어려운"],["pressure","압력, 압박"],["demand","요구하다, 청구하다, 수요, 요구, 청구"],["multitask","동시에 여러 가지 일을 하다, 다중 작업을 하다"],["cynical","냉소적인, 비꼬는"],["antiquity","아주 오래됨, 고대"],["ubiquity","아주 흔함, 보편(적 존재), 도처에 있음"],["statement","진술, 말"],["refer","부르다, 언급하다, 참조하다"],["apprentice","견습생, 도제, 실습생","The young ___ learned carpentry from the master."],["vision","비전, 시야, 통찰력"],["career","진로, 직업, 경력"],["insight","통찰, 이해"],["reef","산호, 암초","Colorful fish live around the coral ___."],["extra","추가의, 여분의"],["crew","승무원, 선원"],["exaggerated","과장된, 지나친","His ___ story made everyone laugh."]]],[51,[["puffery","과대광고, 과장 광고"],["fairness","공정성, 공평함","The teacher treats all students with ___."],["delay","지연하다, 미루다, 연기하다, 지연","Heavy fog may ___ the flight."],["excessive","과도한, 지나친","___ use of the phone can hurt your eyes."],["species","종, 종류","The panda is an endangered ___."],["pioneering","선구적인, 개척하는"],["subordinate","종속된, 하위의, 낮은 지위의 개체, 하급자, 부하"],["standing","지위, 평판"],["distress","고충, 고통"],["instant","즉각적인, 순간의, 순간, 즉시"],["glimpse","잠깐 보다, 흘끗 보다, 잠깐 봄, 흘끗 봄","I caught a ___ of the famous singer in the crowd."],["pseudoscientific","유사 과학의"],["definitive","명확한, 결정적인"],["stuff","이것, 물건, 채우다"],["density","밀도, 비중","Iron has a higher ___ than wood."],["input","투입, 의견, 입력하다"],["net","순, 에누리 없는, 그물, 올가미"],["uncorrectable","고칠 수 없는"],["log","통나무, 일지, 기록"],["inclination","경향(성), 성향, 기질"],["unwelcome","달갑지 않은, 불편한"],["defect","결함, 결점, 탈퇴하다, 이탈하다","The product was returned because of a ___."],["frankness","솔직함, 솔직성"],["delicately","세심하게, 섬세하게"],["sphere","영역, 구체"],["vocational","직업적인, 직업의"],["practical","실제적인, 실용적인"],["imprison","(감옥에) 가두다, 감금하다","The government decided to ___ the thief."],["assure","장담하다, 안심시키다"],["magnificent","거대한, 장엄한","The palace is a ___ building."]]],[52,[["blizzard","눈보라, 폭설","The ___ buried the village in snow."],["scar","흉터","The cut left a small ___ on his arm."],["proctor","(시험을) 감독하다"],["jurisdiction","관할(당국), 관할권"],["architect","건축가","The ___ designed a beautiful library."],["psyche","심리, 마음"],["diminish","줄어들다","The pain will ___ with time."],["orientation","방향성, 지향성, 오리엔테이션"],["critique","비판, 비판적 분석"],["conformism","순응주의"],["dissent","반대"],["divergent","상반된, 서로 다른"],["commodity","상품"],["amphibian","양서류","A frog is an ___ that lives on land and in water."],["advocacy","옹호, 지지"],["overtake","앞지르다"],["plumage","깃털","The peacock's colorful ___ attracts attention."],["pluck","뽑다, 뜯다"],["relocate","이전하다","The company plans to ___ its office to Busan."],["neglect","무관심하다, 도외시하다, 방치, 무시","Don't ___ your health during exams."],["altruism","이타주의, 이타심"],["oppressed","억압받는"],["aggress","공격하다, 공세를 취하다"],["slaughterhouse","도축장"],["prevalence","보급, 널리 퍼짐"],["incubation","잠복, 부화"],["observe","관찰하다, 준수하다"],["uptake","수용, 흡수"],["dissolve","사라지다, 녹이다","Sugar will ___ in hot water."],["synchronize","동기화하다, 동시에 일어나다"]]],[53,[["orchestrate","조율하다, 계획하다"],["poll","여론 조사, 투표","A recent ___ shows most people support the plan."],["gut","장, 소화관"],["epidemiology","역학"],["fluctuate","오르내리다, 변동하다","Prices ___ from day to day."],["underlying","근본적인","The ___ cause of the problem is poverty."],["synthesis","합성, 통합"],["adept","능숙한","She is ___ at solving math problems."],["align","(~에 맞춰) 조정[조절]하다, 나란하다"],["indicator","지표"],["revenue","수입, 수익","The company's ___ rose by ten percent."],["outing","나들이"],["irrelevant","무의미한, 무관한","That detail is ___ to the question."],["hurdle","(경기용) 허들, 장애물","The biggest ___ for the project was the cost."],["thigh","허벅지"],["loop","고리"],["heel","뒷굽, 발뒤꿈치"],["riddled","(구멍이나 해로운 것으로)가득한, 구멍이 숭숭 뚫린"],["burst","붕괴하다, 터지다"],["specification","명세 (사항)"],["unforeseen","예측하지 못한, 뜻밖의"],["skyrocket","급상승하다, 급등하다","Prices will ___ if supply is low."],["adolescence","청소년기, 사춘기"],["launch","시작하다, 일으키다"],["decorative","장식의, 장식용의"],["ornamental","장식적인, 장식용의"],["flashy","현란한, 화려한"],["visibility","가시성, 시계"],["surrounding","주변 (환경)"],["donor","기부자, 기증자","The blood ___ saved a life."]]],[54,[["attic","다락, 다락방","Old toys were stored in the ___."],["persistence","지구력, 끈기, 인내","Success requires hard work and ___."],["edge","우위, 가장자리, 끝"],["herd","(동물의) 무리, 떼","A ___ of cattle crossed the road."],["upbringing","양육"],["hallucination","오해의 소지가 있는 정보, 환각 (증상)"],["codify","(법률 등을) 성문화하다, 체계화하다"],["retail","소매(상)"],["microbiome","체내 미생물 생태계"],["sedentary","앉은 채 지내는, 몸을 많이 움직이지 않는","A ___ lifestyle can harm your health."],["pharmaceuticals","약, 의약품"],["urbanization","도시화"],["microbe","미생물, 세균"],["scrutiny","면밀한 검토(조사)","The politician's actions came under public ___."],["governance","통치, 관리, 지배 구조"],["envisage","상상하다, 예상하다"],["surveillance","감시","Cameras provide ___ of the streets at night."],["harden","굳다","Cement will ___ in a few hours."],["involve","수반하다, 포함하다"],["dilation","지연, 확장"],["consent","동의, 승낙"],["envision","상상하다, 구상하다"],["fin","지느러미"],["recite","나열하다, 암송하다","The student will ___ a poem in front of the class."],["resist","저항하다"],["credit","덕분으로 여기다, 공, 신뢰, 신용"],["nod","고개를 끄덕임, (고개를)끄덕이다"],["ridge","능선, 줄기, (물체의) 마루","We walked along the mountain ___."],["scale","비늘, 규모"],["exclaim","외치다"]]],[55,[["address","(어려운 문제 등을) 다루다, 처리하다, 주소"],["eagerly","간절히, 열정적으로"],["inviting","매력적인"],["engaging","흥미로운, 매력적인"],["refrain","삼가다, 자제하다","Please ___ from talking during the movie."],["supervise","지켜보다, 관리하다, 감독하다","Teachers ___ students during lunch."],["foster","기르다, 조성하다","The program helps to ___ creativity in children."],["skip","(일·수업·식사 등을) 거르다, 빼다"],["worth","(~의 [할]) 가치가 있는"],["essential","필수적인, 본질적인"],["ingredient","성분, 요인, 구성 요소","Flour is the main ___ in bread."],["genuine","참된, 진정성 있는","The painting is ___, not a copy."],["track","추적하다, 길, 자국"],["arch","아치, 아치형으로 구부리다(휘다)"],["comfy","편안한"],["uplifting","기분 좋게 하는, 행복감을 주는"],["supply","용품, 공급, 공급하다"],["assignment","과제, 임무, 배정, 배치","I finished my math ___ last night."],["overview","개요, 개관"],["slip","(작은 종이) 조각, 쪽지, 빠져나가다, 미끄러지다"],["equipment","장비"],["account","계정, 서술, 설명"],["occasion","(특정한) 날, 경우, 행사"],["elastic","탄력 있는","A rubber band is ___."],["quality","품질, 질"],["landscape","풍경, 경관, 지형","The painter loved to draw the mountain ___."],["shipping","배송, 운송"],["fuss","번거로움, 소란"],["cancel(l)ation","취소"],["geography","지리, 지리학","She likes ___ because she loves maps."]]],[56,[["replacement","재발급, 교체, 대체"],["cram","벼락치기 공부를 하다","Many students ___ for exams the night before."],["retain","유지하다","It is hard to ___ information without review."],["accommodation","(주로 복수로) 숙박 시설, 숙소"],["secure","확보하다, 획득하다, 안전한, 안심하는"],["vendor","판매자, 노점상","The street ___ sells hot snacks."],["migrant","이주민, 철새, 이주성의"],["voucher","(현금 대용의) 교환권, 상품권","Show this ___ to get a free drink."],["feature","(특별히) 포함하다, 특징으로 하다, 특징, 특색"],["upcoming","다가오는, 앞으로의"],["compartment","칸, 구역, 객실","Put your bag in the overhead ___."],["irritating","짜증 나게 하는, 성가신"],["spot","찾다, 알아채다, 지대, 곳"],["fabric","천, 직물","Silk is a soft and smooth ___."],["payment","결제, 지불(금), 납입(금)"],["seedling","(어린) 묘목, 새싹"],["matter","중요하다, 일, 문제"],["rewarding","보람 있는"],["overdue","연체된","The library book is ___, so I must pay a fine."],["oversee","총괄하다, 감독하다"],["substitute","대타, 대체물, 대신하다, 교체하다"],["guidance","지도, 안내"],["profit","수익, 이윤"],["depict","묘사하다, 그리다","The painting ___ a quiet village."],["texture","질감, 식감"],["autonomous","자율적인, 독립적인"],["mobility","이동성"],["resident","주민, 거주자","Every ___ of the building received a notice."],["accompany","동행하다, 동반하다"],["edit","편집하다"]]],[57,[["sibling","남매, 형제자매","My brother is my only ___."],["subscribe","구독하다","I ___ to a monthly science magazine."],["convey","전달하다","Words cannot ___ how happy I am."],["proceed","진행되다, 수익금"],["boost","높이다, 향상하다, 고양, (신장시키는) 힘"],["rectangular","직사각형의","The table is ___, not round."],["primary","기본의, 주요한"],["certificate","수료증, 증서, 증명서","He received a ___ after finishing the course."],["shame","아쉬운 일, 애석한 일, 수치심"],["viewpoint","관점, 방향"],["adorable","(아주) 사랑스러운"],["spirit","의도, 정신, 기분"],["pharmacy","약국, 약학","I bought medicine at the ___."],["notice","공지, 공고, 알아차리다"],["mandatory","필수적인","Wearing a helmet is ___ for riders."],["bin","수거함, 쓰레기통"],["insurance","보험"],["numerous","수많은"],["overseas","해외의"],["scenery","풍경, 경관","The mountain ___ was breathtaking."],["gather","모으다, 모이다"],["pottery","도자기"],["recruitment","신입 회원(구성원) 모집"],["impact","영향, 충돌"],["crane","기중기"],["earmuff","(보온용) 귀마개"],["autograph","(유명인의) 사인, 서명","The fans asked the singer for an ___."],["preview","시사회, 미리 소개하다, 사전 검토(조사)하다"],["reunion","동창회, 재회"],["identity","신원, 정체성"]]],[58,[["iris","홍채"],["vein","정맥","Blood flows through a ___ back to the heart."],["guarantee","보장하다, 보장","The shop will ___ the quality of its goods."],["vague","모호한, 애매한","His answer was ___, so I asked again."],["stock","재고, (상품 등을) 갖추다"],["cocoon","(곤충의) 고치, 보호막","The butterfly emerged from its ___."],["therapy","치료, 요법"],["earbud","이어폰, 이어버드(귀 안에 넣는 이어폰)"],["refrigerate","냉장 보관하다, 냉장하다","Please ___ the milk after you open it."],["vent","(공기 등의) 출구, 배출구, 통풍구"],["overshadow","가리다"],["portion","부분, 1인분 (양)","She ate a small ___ of rice."],["deserve","누릴 자격이 있다, 받을 만하다","You ___ a rest after working so hard."],["vibe","분위기, 느낌"],["attendee","참석자"],["release","출시하다, 발표하다, 풀어 주다, 발표(물), 발간(물), 석방"],["feed","먹이를 주다, 피드(제공되는 정보)"],["award","수여하다, 상"],["category","부문, 범주"],["showcase","(좋은 점을) 뽐내다, 보여 주다"],["strap","끈, 줄, 매다, 끈으로 묶다"],["contract","계약, 수축하다, 수축시키다"],["itinerary","여행 일정(표)","Our ___ includes three cities in five days."],["strain","긴장, 피로"],["bond","유대(감)"],["tie","(강한) 유대 관계, 묶다"],["fitness","체력, 신체 단련"],["capacity","용량, 능력, 수용력"],["prehistoric","선사 시대의","Dinosaurs are ___ animals."],["journal","일기, 학술지, 신문"]]],[59,[["device","기기, 장치"],["permission","허가"],["heritage","유산, 유적","The old temple is part of our cultural ___."],["plot","작은 땅, (소설, 극, 영화등의) 플롯, 줄거리"],["detective","형사, 탐정","The ___ solved the mystery by finding a hidden clue."],["pollutant","오염 물질","Smoke from factories is a harmful ___."],["spill","유출, 쏟다, 흐르다","Be careful not to ___ the coffee."],["eligible","자격이 있는, 적합한","You are ___ to vote when you turn eighteen."],["spiral","나선형의, 소용돌이"],["entry","(행사·대회 등의) 참가(작), 응시자 수"],["authentic","정통의, 진정한, 진짜의","We ate ___ Italian pizza in Naples."],["run","운영되다, 진행되다, 운영하다, 달리다"],["appealing","매력적인, 마음이 끌리는"],["stuck","갇힌"],["suspect","~이 아닌가 하고 생각하다, 의심하다, 의심스러운, 용의자","The police ___ that he was lying."],["bias","편향, 편견"],["consequence","결과, 중요함","Every action has a ___."],["linguistics","언어학"],["steady","일정한, 한결같은, 꾸준한"],["giveaway","사은품, 경품"],["deposit","입금하다, 예금하다, 보증금, 착수금"],["grocery","식료품"],["deadline","마감일, 기한","The ___ for the report is Friday."],["itchy","가려운"],["previous","전의, 이전의"],["absence","결석, 부재"],["broadcasting","방송(업)"],["aspect","요소, 측면"],["breathable","통기성이 좋은"],["stem","줄기, 비롯되다, 유래하다"]]],[60,[["illustration","삽화, 예시"],["enlarge","확대하다, 확장하다","Use a copy machine to ___ the picture."],["bait","미끼","Fishermen use worms as ___."],["supportive","힘을 주는, 도움을 주는, 지원하는"],["intense","강렬한, 격렬한","The heat was so ___ that we stayed inside."],["waterproof","방수가 되는, 방수의","This jacket is ___, so you won't get wet."],["handful","줌, 소수"],["raw","익히지 않은, 미숙한"],["alert","정신이 초롱초롱한, 민감하게 반응하는"],["peel","(껍질을) 벗기다, 껍질","Please ___ the apple before you eat it."],["colleague","동료"],["signature","대표의, 표시, 서명"],["resolution","해상도, 해결, 결의"],["range","범위, 거리, 영역, 범위가 ~이다"],["melt","녹다","Ice will ___ in the sun."],["dye","염료, 염색하다"],["creature","생물, 동물"],["expire","(유통 기간이) 끝나다, 만료되다","The milk will ___ tomorrow, so drink it today."],["mural","벽화"],["principal","교장, 주요한"],["inspection","점검, 검사, 살펴봄","The safety ___ found no problems."],["valuable","(주로 복수로) 귀중품, 가치 있는, 귀중한"],["dehumidifier","제습기"],["attachment","부속품, 애착"],["courtesy","예의, 공손함"],["disguise","위장하다, 변장하다, 변장, 위장","He wore a wig to ___ himself."],["thread","실, 실타래"],["storage","저장 공간, 저장 시설, 저장"],["bare","드러내다, 벌거벗은"],["refreshing","원기를 북돋우는, 상쾌하게 하는, 신선한"]]]];
+
+  /*LOGIC-START*/
+  function shuffle(a) {
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function sample(a, n) { return shuffle(a).slice(0, n); }
+
+  function splitSenses(m) {
+    var out = [], depth = 0, cur = '';
+    for (var k = 0; k < m.length; k++) {
+      var ch = m[k];
+      if (ch === '(' || ch === '[') depth++;
+      else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
+      if (ch === ',' && depth === 0) { out.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out.filter(Boolean);
+  }
+  function normSenses(senses) {
+    var set = {};
+    senses.forEach(function (s) {
+      var a = s.replace(/\([^)]*\)/g, '');
+      var vars = [a.replace(/\[[^\]]*\]/g, '')];
+      var m = a.match(/([가-힣A-Za-z]+)\[([^\]]+)\]/);
+      if (m) vars.push(a.replace(m[0], m[2]));
+      vars.forEach(function (v) {
+        v = v.replace(/\s+/g, '').replace(/[\[\]]/g, '');
+        if (v.length >= 2) set[v] = 1;
+      });
+    });
+    return Object.keys(set);
+  }
+  function shortMean(senses) {
+    var acc = [], len = 0;
+    for (var i = 0; i < senses.length; i++) {
+      var s = senses[i];
+      if (acc.length >= 3) break;
+      if (acc.length && len + s.length > 30) break;
+      acc.push(s); len += s.length + 2;
+    }
+    return acc.join(', ');
+  }
+  function clsOf(wd) {
+    var f = (wd.senses[0] || '').replace(/\([^)]*\)|\[[^\]]*\]/g, '').trim();
+    if (/(하다|시키다|되다|이다|있다|없다|같다|다)$/.test(f)) return 'v';
+    if (/(한|인|운|은|는|된|런|의|적인)$/.test(f)) return 'a';
+    return 'n';
+  }
+
+  var WORDS = [];
+  RAW.forEach(function (d) {
+    d[1].forEach(function (r) {
+      var senses = splitSenses(r[1]);
+      WORDS.push({ id: WORDS.length, day: d[0], w: r[0], m: r[1], s: r[2] || null,
+        senses: senses, short: shortMean(senses), ns: normSenses(senses) });
+    });
+  });
+  WORDS.forEach(function (w) { w.cls = clsOf(w); });
+
+  function overlap(a, b) {
+    for (var i = 0; i < a.ns.length; i++) for (var j = 0; j < b.ns.length; j++) {
+      var x = a.ns[i], y = b.ns[j];
+      if (x === y) return true;
+      if (x.length >= 3 && y.length >= 3 && (x.indexOf(y) >= 0 || y.indexOf(x) >= 0)) return true;
+    }
+    return false;
+  }
+  function sibling(a, b) {
+    a = a.toLowerCase(); b = b.toLowerCase();
+    if (a.indexOf(b) >= 0 || b.indexOf(a) >= 0) return true;
+    var n = Math.min(5, a.length, b.length);
+    return n >= 4 && a.slice(0, n) === b.slice(0, n);
+  }
+  function distract(wd, pool, k, mode) {
+    var seen = {}; seen[mode === 'ko' ? wd.short : wd.w] = 1;
+    var picked = [];
+    function consider(list) {
+      var same = [], other = [];
+      shuffle(list).forEach(function (x) {
+        if (x.id === wd.id || overlap(wd, x)) return;
+        if (mode === 'en' && sibling(wd.w, x.w)) return;
+        (x.cls === wd.cls ? same : other).push(x);
+      });
+      same.concat(other).forEach(function (x) {
+        if (picked.length >= k) return;
+        var t = mode === 'ko' ? x.short : x.w;
+        if (seen[t]) return;
+        seen[t] = 1; picked.push(x);
+      });
+    }
+    consider(pool);
+    if (picked.length < k) consider(WORDS);
+    return picked;
+  }
+  function makeQ(wd, type, pool) {
+    if (type === 'mc') {
+      var opts = shuffle([wd].concat(distract(wd, pool, 4, 'ko'))).map(function (x) {
+        return { id: x.id, text: x.short, word: x.w, short: x.short };
+      });
+      return { type: type, wd: wd, opts: opts, ans: opts.findIndex(function (o) { return o.id === wd.id; }) };
+    }
+    if (type === 'cl') {
+      var cap = wd.s.indexOf('___') === 0;
+      var o2 = shuffle([wd].concat(distract(wd, pool, 4, 'en'))).map(function (x) {
+        return { id: x.id, text: cap ? x.w.charAt(0).toUpperCase() + x.w.slice(1) : x.w, word: x.w, short: x.short };
+      });
+      return { type: type, wd: wd, cap: cap, opts: o2, ans: o2.findIndex(function (o) { return o.id === wd.id; }) };
+    }
+    return { type: 'sp', wd: wd };
+  }
+  function composition(n0, pool) {
+    var n = Math.min(n0, pool.length);
+    var sw = pool.filter(function (w) { return w.s; });
+    var sp = Math.round(n * 0.15);
+    var cl = Math.min(Math.floor(n * 0.05), sw.length);
+    return { n: n, mc: n - sp - cl, sp: sp, cl: cl };
+  }
+  function plan(n0, pool) {
+    var c = composition(n0, pool);
+    var sw = pool.filter(function (w) { return w.s; });
+    var clW = sample(sw, c.cl);
+    var taken = {}; clW.forEach(function (w) { taken[w.id] = 1; });
+    var rest = sample(pool.filter(function (w) { return !taken[w.id]; }), c.n - c.cl);
+    var items = [];
+    clW.forEach(function (w) { items.push({ wd: w, type: 'cl' }); });
+    rest.forEach(function (w, i) { items.push({ wd: w, type: i < c.sp ? 'sp' : 'mc' }); });
+    var words = items.map(function (i) { return i.wd; }).sort(function (a, b) { return a.id - b.id; });
+    return { items: shuffle(items), words: words, comp: c };
+  }
+  function typedItems(words) {
+    var n = words.length;
+    var sw = words.filter(function (w) { return w.s; });
+    var cl = Math.min(Math.floor(n * 0.05), sw.length);
+    var clW = sample(sw, cl), taken = {};
+    clW.forEach(function (w) { taken[w.id] = 1; });
+    var rest = shuffle(words.filter(function (w) { return !taken[w.id]; }));
+    var sp = Math.round(n * 0.15);
+    var items = clW.map(function (w) { return { wd: w, type: 'cl' }; });
+    rest.forEach(function (w, i) { items.push({ wd: w, type: i < sp ? 'sp' : 'mc' }); });
+    return shuffle(items);
+  }
+  function normAns(s) { return s.toLowerCase().replace(/[^a-z]/g, ''); }
+  function checkSpelling(wd, input) {
+    var n = normAns(input);
+    if (!n) return false;
+    var a = normAns(wd.w.replace(/\(([^)]*)\)/g, '$1'));
+    var b = normAns(wd.w.replace(/\([^)]*\)/g, ''));
+    return n === a || n === b;
+  }
+  function hintOf(w) {
+    return w.replace(/\([^)]*\)/g, '').split('').map(function (c, i) {
+      return i === 0 ? c : (/[a-z]/i.test(c) ? '_' : c);
+    }).join(' ');
+  }
+  /*LOGIC-END*/
+
+  /* ---------- UI ---------- */
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  function h(tag, props) {
+    var e = document.createElement(tag);
+    if (props) Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (k === 'class') e.className = v;
+      else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), v);
+      else if (v === true) e.setAttribute(k, '');
+      else if (v !== false && v != null) e.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var kids = [].concat(arguments[i]);
+      kids.forEach(function (c) {
+        if (c == null || c === false) return;
+        e.append(c.nodeType ? c : document.createTextNode(String(c)));
+      });
+    }
+    return e;
+  }
+  function markSvg(ok) {
+    var s = h('span', { class: 'mk ' + (ok ? 'good' : 'bad'), 'aria-hidden': 'true' });
+    s.innerHTML = ok
+      ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/></svg>'
+      : '<svg viewBox="0 0 24 24"><path d="M6 20 L18 4"/></svg>';
+    return s;
+  }
+  function fitWord(el, max) {
+    el.style.fontSize = '';
+    var len = Math.max(1, el.textContent.length);
+    var w = el.clientWidth || 280;
+    var fs = Math.max(26, Math.min(max, Math.floor(w / (len * 0.52))));
+    el.style.fontSize = fs + 'px';
+  }
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var VIEWS = ['v-setup', 'v-cards', 'v-quiz', 'v-result', 'v-wrong'];
+  var current = 'v-setup';
+  function show(id) {
+    VIEWS.forEach(function (v) { $('#' + v).hidden = v !== id; });
+    current = id;
+    window.scrollTo(0, 0);
+  }
+
+  /* settings */
+  var S = { from: 1, to: 60, n: 50 };
+  try {
+    var saved = JSON.parse(localStorage.getItem('voca1800.settings') || 'null');
+    if (saved && saved.from >= 1 && saved.to <= 60 && saved.from <= saved.to) { S.from = saved.from; S.to = saved.to; }
+    if (saved && [30, 50, 100].indexOf(saved.n) >= 0) S.n = saved.n;
+  } catch (e) {}
+  function saveSettings() { try { localStorage.setItem('voca1800.settings', JSON.stringify(S)); } catch (e) {} }
+  function poolFor() { return WORDS.filter(function (w) { return w.day >= S.from && w.day <= S.to; }); }
+
+  var SESSION = null;
+
+  /* wrong-answer log (kept in this browser only) */
+  var LOG = {};
+  try { LOG = JSON.parse(localStorage.getItem('voca1800.wrong') || '{}') || {}; } catch (e) { LOG = {}; }
+  function saveLog() {
+    var ids = Object.keys(LOG);
+    if (ids.length > 300) {
+      ids.sort(function (a, b) { return LOG[a].t - LOG[b].t; }).slice(0, ids.length - 300).forEach(function (id) { delete LOG[id]; });
+    }
+    try { localStorage.setItem('voca1800.wrong', JSON.stringify(LOG)); } catch (e) {}
+  }
+  function recordResult(wd, type, ok, given) {
+    var r = LOG[wd.id];
+    if (!ok) LOG[wd.id] = { c: (r ? r.c : 0) + 1, t: Date.now(), g: given || '', ty: type, r: 0 };
+    else if (r && !r.r) { r.r = 1; }
+    else return;
+    saveLog();
+  }
+  function wrongEntries() {
+    return Object.keys(LOG).map(function (id) { return { wd: WORDS[+id], r: LOG[id] }; })
+      .filter(function (e) { return e.wd; })
+      .sort(function (a, b) { return b.r.t - a.r.t; });
+  }
+  function fmtTime(ts) {
+    var d = new Date(ts), p = function (n) { return String(n).padStart(2, '0'); };
+    return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  /* setup view */
+  var RANGES = [[1, 10], [11, 20], [21, 30], [31, 40], [41, 50], [51, 60], [1, 60]];
+  function renderSetup() {
+    var pool = poolFor();
+    var chips = $('#chips'); chips.replaceChildren();
+    RANGES.forEach(function (r) {
+      var label = r[0] === 1 && r[1] === 60 ? '전체' : r[0] + '–' + r[1];
+      chips.append(h('button', { class: 'chip', type: 'button', 'aria-pressed': String(S.from === r[0] && S.to === r[1]),
+        onclick: function () { S.from = r[0]; S.to = r[1]; renderSetup(); } }, label));
+    });
+    $('#d-from').value = String(S.from); $('#d-to').value = String(S.to);
+    var openCount = wrongEntries().filter(function (e) { return !e.r.r; }).length;
+    $('#go-wrong').textContent = '최근 오답 보기' + (openCount ? ' (' + openCount + ')' : '');
+    $('#range-meta').textContent = (S.from === S.to ? 'DAY ' + S.from : 'DAY ' + S.from + '–' + S.to) + ' · ' + pool.length.toLocaleString('en-US') + '단어';
+    var seg = $('#seg-n'); seg.replaceChildren();
+    [30, 50, 100].forEach(function (n) {
+      seg.append(h('button', { type: 'button', role: 'radio', 'aria-checked': String(S.n === n),
+        onclick: function () { S.n = n; renderSetup(); } }, String(n)));
+    });
+    var c = composition(S.n, pool);
+    var bar = $('#mixbar'); bar.replaceChildren();
+    [c.mc, c.sp, c.cl].forEach(function (v) { if (v > 0) { var i = h('i'); i.style.flex = String(v); bar.append(i); } });
+    var lg = $('#legend'); lg.replaceChildren();
+    lg.append(h('span', null, '객관식', h('b', null, c.mc)), h('span', null, '철자', h('b', null, c.sp)), h('span', null, '빈칸', h('b', null, c.cl)));
+    $('#mix-note').textContent = c.n < S.n
+      ? '범위 안 단어가 ' + c.n + '개라서 ' + c.n + '문항으로 출제돼요.'
+      : '객관식 영→한 5지선다 · 철자 한→영 · 문장 빈칸 5지선다';
+  }
+  (function initSelects() {
+    ['#d-from', '#d-to'].forEach(function (id) {
+      var sel = $(id);
+      for (var d = 1; d <= 60; d++) sel.append(h('option', { value: String(d) }, 'Day ' + d));
+    });
+    $('#d-from').addEventListener('change', function (e) {
+      S.from = +e.target.value; if (S.to < S.from) S.to = S.from; renderSetup();
+    });
+    $('#d-to').addEventListener('change', function (e) {
+      S.to = +e.target.value; if (S.from > S.to) S.from = S.to; renderSetup();
+    });
+  })();
+
+  function startSession(withCards) {
+    var pool = poolFor();
+    var p = plan(S.n, pool);
+    SESSION = { pool: pool, items: p.items, words: p.words };
+    saveSettings();
+    if (withCards) openCards(SESSION.words, function () { startQuiz(SESSION.items, 1); });
+    else startQuiz(SESSION.items, 1);
+  }
+  $('#go-cards').addEventListener('click', function () { startSession(true); });
+  $('#go-quiz').addEventListener('click', function () { startSession(false); });
+  $('#go-wrong').addEventListener('click', function () { renderWrong(); show('v-wrong'); });
+
+  /* flashcards */
+  var C = { list: [], i: 0, marks: {}, done: null };
+  function openCards(list, done) {
+    C.list = list; C.i = 0; C.marks = {}; C.done = done;
+    show('v-cards');
+    $('#c-deck').hidden = false; $('#c-end').hidden = true;
+    renderCard();
+  }
+  function renderCard() {
+    var wd = C.list[C.i], fc = $('#fc');
+    fc.classList.add('noanim'); fc.classList.remove('flipped');
+    var day = 'DAY ' + String(wd.day).padStart(2, '0');
+    $('#fc-day').textContent = day; $('#fc-day2').textContent = day;
+    $('#fc-word').textContent = wd.w; $('#fc-word2').textContent = wd.w;
+    $('#fc-mean').textContent = wd.m;
+    var ex = $('#fc-ex');
+    if (wd.s) {
+      var parts = wd.s.split('___');
+      ex.replaceChildren(document.createTextNode(parts[0]), h('mark', null, wd.w), document.createTextNode(parts[1]));
+      ex.hidden = false;
+    } else { ex.replaceChildren(); ex.hidden = true; }
+    fitWord($('#fc-word'), 56);
+    void fc.offsetWidth; fc.classList.remove('noanim');
+    $('#c-count').textContent = (C.i + 1) + ' / ' + C.list.length;
+    $('#c-bar').style.width = ((C.i + 1) / C.list.length * 100) + '%';
+    $('#c-prev').disabled = C.i === 0;
+  }
+  function flip() { $('#fc').classList.toggle('flipped'); }
+  function nextCard() { if (C.i < C.list.length - 1) { C.i++; renderCard(); } else endCards(); }
+  function prevCard() { if (C.i > 0) { C.i--; renderCard(); } }
+  function markCard(kind) { C.marks[C.list[C.i].id] = kind; nextCard(); }
+  function endCards() {
+    $('#c-deck').hidden = true;
+    var end = $('#c-end'); end.hidden = false;
+    var unsure = C.list.filter(function (w) { return C.marks[w.id] === 'unsure'; });
+    var know = C.list.filter(function (w) { return C.marks[w.id] === 'know'; });
+    end.replaceChildren(
+      h('h2', null, '카드를 모두 봤어요'),
+      h('div', { class: 'stats' }, h('span', null, '알아요', h('b', null, know.length)), h('span', null, '헷갈려요', h('b', null, unsure.length))),
+      unsure.length ? h('button', { class: 'btn secondary', type: 'button', onclick: function () { openCards(unsure, C.done); } }, '헷갈린 단어 다시 보기 (' + unsure.length + ')') : null,
+      h('button', { class: 'btn primary', type: 'button', onclick: function () { C.done(); } }, '퀴즈 시작')
+    );
+    $('#c-bar').style.width = '100%';
+  }
+  var swipeStart = null, swiped = false;
+  $('#fc').addEventListener('pointerdown', function (e) { swipeStart = { x: e.clientX, y: e.clientY }; swiped = false; });
+  $('#fc').addEventListener('pointerup', function (e) {
+    if (!swipeStart) return;
+    var dx = e.clientX - swipeStart.x, dy = e.clientY - swipeStart.y;
+    swipeStart = null;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) >= 35) { swiped = true; flip(); }
+  });
+  $('#fc').addEventListener('pointercancel', function () { swipeStart = null; });
+  $('#fc').addEventListener('click', function () { if (swiped) { swiped = false; return; } flip(); });
+  $('#fc').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
+  });
+  $('#c-flip').addEventListener('click', flip);
+  $('#c-next').addEventListener('click', nextCard);
+  $('#c-prev').addEventListener('click', prevCard);
+  $('#c-know').addEventListener('click', function () { markCard('know'); });
+  $('#c-unsure').addEventListener('click', function () { markCard('unsure'); });
+  $('#c-back').addEventListener('click', function () { show('v-setup'); renderSetup(); });
+  $('#c-skip').addEventListener('click', function () { if (C.done) C.done(); });
+
+  /* quiz */
+  var Q = { qs: [], i: 0, ok: 0, ng: 0, answered: false, results: [], round: 1, cur: null };
+  var TYPE_LABEL = { mc: '객관식 · 영→한', sp: '철자 · 한→영', cl: '빈칸 채우기' };
+  function startQuiz(items, round) {
+    Q.round = round || 1;
+    Q.qs = shuffle(items).map(function (it) { return makeQ(it.wd, it.type, SESSION.pool); });
+    Q.i = 0; Q.ok = 0; Q.ng = 0; Q.results = [];
+    show('v-quiz');
+    renderQ();
+  }
+  function optList(q, onPick) {
+    return h('div', { class: 'opts', role: 'group' }, q.opts.map(function (o, i) {
+      return h('button', { class: 'opt', type: 'button', onclick: function () { onPick(i); } },
+        h('span', { class: 'bub' }, String(i + 1)), h('span', null, o.text), h('span', { class: 'opt-r' }));
+    }));
+  }
+  function renderQ() {
+    var q = Q.qs[Q.i]; Q.cur = q; Q.answered = false;
+    $('#q-count').textContent = (Q.i + 1) + ' / ' + Q.qs.length;
+    $('#q-bar').style.width = (Q.i / Q.qs.length * 100) + '%';
+    $('#q-ok').textContent = Q.ok; $('#q-ng').textContent = Q.ng;
+    $('#q-type').textContent = TYPE_LABEL[q.type];
+    $('#q-no').textContent = 'Q' + String(Q.i + 1).padStart(2, '0');
+    $('#q-fb').hidden = true; $('#q-next').hidden = true;
+    var body = $('#q-body'); body.replaceChildren();
+    if (q.type === 'mc') {
+      var word = h('div', { class: 'q-word' }, q.wd.w);
+      body.append(h('p', { class: 'q-prompt' }, '뜻으로 가장 알맞은 것을 고르세요.'), word, optList(q, pickOpt));
+      fitWord(word, 48);
+    } else if (q.type === 'cl') {
+      var parts = q.wd.s.split('___');
+      body.append(
+        h('p', { class: 'q-prompt' }, '빈칸에 들어갈 가장 알맞은 단어를 고르세요.'),
+        h('p', { class: 'q-sent' }, parts[0], h('span', { class: 'blank' }, ' '), parts[1]),
+        optList(q, pickOpt));
+    } else {
+      var form = h('form', { class: 'sp-form', onsubmit: function (e) { e.preventDefault(); submitSP(); } },
+        h('input', { id: 'sp-in', class: 'inp', type: 'text', autocomplete: 'off', autocapitalize: 'none', autocorrect: 'off', spellcheck: 'false', 'aria-label': '영어 단어 입력', placeholder: '영어로 입력' }),
+        h('div', { class: 'sp-actions' },
+          h('button', { class: 'btn primary', type: 'submit', id: 'sp-ok' }, '확인'),
+          h('button', { class: 'btn secondary', type: 'button', id: 'sp-skip', onclick: giveUp }, '모르겠어요')));
+      body.append(h('p', { class: 'q-prompt' }, '뜻에 맞는 영어 단어를 쓰세요.'), h('div', { class: 'q-mean' }, q.wd.m),
+        h('div', { class: 'hint' }, hintOf(q.wd.w)), form);
+      setTimeout(function () { var el = $('#sp-in'); if (el) el.focus({ preventScroll: true }); }, 0);
+    }
+  }
+  function finish(ok, given) {
+    Q.answered = true;
+    Q.results.push({ q: Q.cur, ok: ok, given: given });
+    recordResult(Q.cur.wd, Q.cur.type, ok, given);
+    if (ok) Q.ok++; else Q.ng++;
+    $('#q-ok').textContent = Q.ok; $('#q-ng').textContent = Q.ng;
+    $('#q-bar').style.width = ((Q.i + 1) / Q.qs.length * 100) + '%';
+  }
+  function pickOpt(i) {
+    if (Q.answered) return;
+    var q = Q.cur, ok = i === q.ans;
+    finish(ok, q.opts[i].text);
+    var rows = [].slice.call($('.opts').children);
+    rows.forEach(function (r, k) {
+      var o = q.opts[k], right = r.querySelector('.opt-r');
+      r.disabled = true;
+      right.append(h('span', { class: 'opt-w' }, q.type === 'mc' ? o.word : o.short));
+      if (k === q.ans) { r.classList.add('is-correct'); right.append(markSvg(true)); }
+      else if (k === i) { r.classList.add('is-wrong'); right.append(markSvg(false)); }
+      else r.classList.add('dim');
+      if (k === i) r.classList.add('picked');
+    });
+    showFeedback(ok, q.opts[i].text);
+  }
+  function submitSP() {
+    if (Q.answered) return;
+    var inp = $('#sp-in'), val = inp.value.trim();
+    if (!normAns(val)) { inp.focus(); return; }
+    var ok = checkSpelling(Q.cur.wd, val);
+    finish(ok, val); lockSP(inp); showFeedback(ok, val);
+  }
+  function giveUp() {
+    if (Q.answered) return;
+    finish(false, ''); lockSP($('#sp-in')); showFeedback(false, '');
+  }
+  function lockSP(inp) {
+    inp.disabled = true; $('#sp-ok').disabled = true; $('#sp-skip').disabled = true;
+  }
+  function showFeedback(ok, given) {
+    var q = Q.cur, fb = $('#q-fb');
+    fb.className = 'fb ' + (ok ? 'good' : 'bad');
+    var lines = [h('div', { class: 'fb-t' }, ok ? '정답' : '오답')];
+    if (q.type === 'cl') {
+      var p = q.wd.s.split('___');
+      var w = q.cap ? q.wd.w.charAt(0).toUpperCase() + q.wd.w.slice(1) : q.wd.w;
+      lines.push(h('div', { class: 'fb-s' }, p[0], h('b', null, w), p[1]));
+      lines.push(h('div', { class: 'fb-m' }, q.wd.w + ' · ' + q.wd.m));
+    } else {
+      if (q.type === 'sp' && !ok) lines.push(h('div', { class: 'fb-given' }, '내 답: ' + (given || '모르겠어요')));
+      lines.push(h('div', { class: 'fb-w' }, q.wd.w));
+      lines.push(h('div', { class: 'fb-m' }, q.wd.m));
+    }
+    fb.replaceChildren(markSvg(ok), h('div', { class: 'fb-body' }, lines));
+    fb.hidden = false;
+    var nx = $('#q-next');
+    nx.textContent = Q.i === Q.qs.length - 1 ? '결과 보기' : '다음 문제';
+    nx.hidden = false;
+    nx.focus({ preventScroll: true });
+    nx.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+  }
+  function nextQ() {
+    if (!Q.answered) return;
+    if (Q.i < Q.qs.length - 1) { Q.i++; renderQ(); window.scrollTo(0, 0); }
+    else showResult();
+  }
+  $('#q-next').addEventListener('click', nextQ);
+  var quitTimer = null;
+  $('#q-quit').addEventListener('click', function (e) {
+    var b = e.currentTarget;
+    if (quitTimer) { clearTimeout(quitTimer); quitTimer = null; b.textContent = '← 그만하기'; show('v-setup'); renderSetup(); return; }
+    b.textContent = '한 번 더 누르면 종료';
+    quitTimer = setTimeout(function () { quitTimer = null; b.textContent = '← 그만하기'; }, 3000);
+  });
+
+  /* result */
+  var BRK = [['mc', '객관식'], ['sp', '철자'], ['cl', '빈칸']];
+  function showResult() {
+    var total = Q.results.length;
+    var ok = Q.results.filter(function (r) { return r.ok; }).length;
+    var pct = Math.round(ok / total * 100);
+    var wrong = Q.results.filter(function (r) { return !r.ok; });
+    var root = $('#v-result'); root.replaceChildren();
+    var msg = pct >= 90 ? '거의 다 맞혔어요.' : pct >= 70 ? '틀린 단어만 한 번 더 풀어 보세요.' : '틀린 단어를 카드로 먼저 복습해 보세요.';
+    var score = h('div', { class: 'score' });
+    if (pct >= 80) {
+      var ring = h('span');
+      ring.innerHTML = '<svg viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="100" cy="50" rx="96" ry="44" transform="rotate(-3 100 50)"/></svg>';
+      score.append(ring.firstChild);
+    }
+    score.append(h('span', { class: 'sc-n' }, ok), h('span', { class: 'sc-d' }, '/ ' + total));
+    var brk = h('div', { class: 'panel' }, h('h2', { class: 'label' }, '유형별'));
+    BRK.forEach(function (b) {
+      var all = Q.results.filter(function (r) { return r.q.type === b[0]; });
+      if (!all.length) return;
+      var good = all.filter(function (r) { return r.ok; }).length;
+      var fill = h('i'); fill.style.width = (good / all.length * 100) + '%';
+      brk.append(h('div', { class: 'brk' }, h('span', null, b[1]), h('div', { class: 'track' }, fill), h('span', { class: 'n' }, good + ' / ' + all.length)));
+    });
+    var kids = [
+      h('div', { class: 'topbar' }, h('span', { class: 'mono' }, Q.round > 1 ? '재도전 ' + (Q.round - 1) + '회차' : '결과'), h('span')),
+      h('div', { class: 'score-wrap' }, score, h('p', { class: 'pct' }, pct + '%')),
+      h('p', { class: 'msg' }, msg),
+      brk
+    ];
+    if (wrong.length) {
+      var ul = h('ul', { class: 'wl' }, wrong.map(function (r) {
+        var g = r.q.type === 'sp' ? (r.given || '모르겠어요') : r.given;
+        return h('li', null,
+          h('div', { class: 'w' }, r.q.wd.w, h('span', { class: 'mono' }, TYPE_LABEL[r.q.type])),
+          h('div', { class: 'm' }, r.q.wd.m),
+          h('div', { class: 'g' }, '내 답: ' + g));
+      }));
+      kids.push(h('div', { class: 'panel' }, h('h2', { class: 'label' }, '틀린 단어 ' + wrong.length), ul));
+    }
+    var acts = h('div', { class: 'actions' });
+    if (wrong.length) {
+      var wItems = wrong.map(function (r) { return { wd: r.q.wd, type: r.q.type }; });
+      var round = Q.round;
+      acts.append(
+        h('button', { class: 'btn primary', type: 'button', onclick: function () { startQuiz(wItems, round + 1); } }, '틀린 문제만 다시 풀기 (' + wrong.length + ')'),
+        h('button', { class: 'btn secondary', type: 'button', onclick: function () {
+          openCards(wrong.map(function (r) { return r.q.wd; }), function () { startQuiz(wItems, round + 1); });
+        } }, '틀린 단어 카드로 복습'));
+    }
+    acts.append(
+      h('button', { class: wrong.length ? 'btn secondary' : 'btn primary', type: 'button', onclick: function () { startSession(true); } }, '같은 범위로 새로 시작'),
+      h('button', { class: 'btn ghost', type: 'button', onclick: function () { show('v-setup'); renderSetup(); } }, '설정으로'));
+    kids.push(acts);
+    kids.forEach(function (k) { root.append(k); });
+    show('v-result');
+  }
+
+  /* recent wrong answers */
+  var TYPE_SHORT = { mc: '객관식', sp: '철자', cl: '빈칸' };
+  function startWrongQuiz(words) {
+    SESSION = { pool: WORDS, items: typedItems(words), words: words };
+    startQuiz(SESSION.items, 1);
+  }
+  var clearTimer = null;
+  function renderWrong() {
+    var root = $('#v-wrong'); root.replaceChildren();
+    var all = wrongEntries();
+    var open = all.filter(function (e) { return !e.r.r; });
+    var words = open.map(function (e) { return e.wd; });
+    root.append(
+      h('div', { class: 'topbar' },
+        h('button', { class: 'link', type: 'button', onclick: function () { show('v-setup'); renderSetup(); } }, '← 설정'),
+        h('span', { class: 'mono' }, '최근 오답'), h('span')),
+      h('div', { class: 'stats' }, h('span', null, '아직 틀림', h('b', null, open.length)), h('span', null, '다시 맞힘', h('b', null, all.length - open.length))));
+    if (!all.length) {
+      root.append(h('div', { class: 'panel' }, h('p', { class: 'empty' }, '아직 기록된 오답이 없어요. 퀴즈에서 틀린 단어가 여기에 쌓이고, 이 기기의 브라우저에만 저장돼요.')));
+      return;
+    }
+    var acts = h('div', { class: 'actions' },
+      h('button', { class: 'btn primary', type: 'button', disabled: !words.length,
+        onclick: function () { openCards(words, function () { startWrongQuiz(words); }); } }, '아직 틀린 단어 카드로 복습'),
+      h('button', { class: 'btn secondary', type: 'button', disabled: !words.length,
+        onclick: function () { startWrongQuiz(words); } }, '아직 틀린 단어로 퀴즈'));
+    var ul = h('ul', { class: 'wl' }, all.map(function (e) {
+      var r = e.r;
+      return h('li', null,
+        h('div', { class: 'w' }, e.wd.w,
+          h('span', { class: 'badge cnt' }, '×' + r.c),
+          r.r ? h('span', { class: 'badge ok' }, '다시 맞힘') : null,
+          h('span', { class: 'mono' }, 'DAY ' + String(e.wd.day).padStart(2, '0'))),
+        h('div', { class: 'm' }, e.wd.m),
+        h('div', { class: 'g' }, fmtTime(r.t) + ' · ' + TYPE_SHORT[r.ty] + ' · 내 답: ' + (r.g || '모르겠어요')));
+    }));
+    var clear = h('button', { class: 'btn ghost', type: 'button' }, '기록 지우기');
+    clear.addEventListener('click', function () {
+      if (clearTimer) { clearTimeout(clearTimer); clearTimer = null; LOG = {}; saveLog(); renderWrong(); return; }
+      clear.textContent = '한 번 더 누르면 전부 지워져요';
+      clearTimer = setTimeout(function () { clearTimer = null; clear.textContent = '기록 지우기'; }, 3000);
+    });
+    root.append(acts, h('div', { class: 'panel' }, h('h2', { class: 'label' }, '최근 순'), ul), clear);
+  }
+
+  /* keyboard */
+  function isBtn(t) { return t && (t.tagName === 'BUTTON' || t.tagName === 'SELECT'); }
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (current === 'v-cards') {
+      if (e.key === 'ArrowRight') { e.preventDefault(); if (!$('#c-deck').hidden) nextCard(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); if (!$('#c-deck').hidden) prevCard(); }
+    } else if (current === 'v-quiz') {
+      var t = e.target;
+      if (!Q.answered && Q.cur && Q.cur.type !== 'sp' && /^[1-5]$/.test(e.key)) { pickOpt(+e.key - 1); }
+      else if (Q.answered && e.key === 'Enter' && !isBtn(t)) { e.preventDefault(); nextQ(); }
+    }
+  });
+
+  renderSetup();
+})();
+</script>
+
+</body>
+</html>
